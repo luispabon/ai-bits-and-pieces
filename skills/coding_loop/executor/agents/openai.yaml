@@ -1,4 +1,4 @@
 interface:
   display_name: "Coding Loop Executor"
   short_description: "Execute approved coding plans in small staged steps."
-  default_prompt: "Execute the approved coding plan one stage or step at a time. Keep changes small, stay aligned to the planner artifacts, and report blockers clearly."
+  default_prompt: "Execute the approved coding plan from overview.md and plan.yaml one stage or step at a time. Keep changes small, stay aligned to the planner artifacts, update execution.md, and report blockers clearly."
