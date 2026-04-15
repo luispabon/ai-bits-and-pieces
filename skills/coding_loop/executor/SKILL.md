@@ -25,12 +25,13 @@ Use this skill after the planner has produced an approved plan. Read the plannin
 4. Record the current stage or step before changing code.
 5. Build a dependency graph and identify the ready steps.
 6. For each ready step, prefer a dedicated worktree and a sub-agent when the runtime supports that safely.
-7. If isolated sub-agent worktrees are not available or are unnecessary, execute the ready steps directly while preserving the same step order and scope boundaries.
-8. Run independent steps in parallel only when the plan allows it and the runtime can isolate them safely.
-9. After each isolated sub-agent step finishes, merge the worktree back into the execution branch, delete the worktree, and resolve merge conflicts immediately if they occur.
-10. Run the relevant verification for each completed step and record the result in `execution.md`.
-11. Write `execution.md` with completed steps, deviations, verification results, blockers, and the active branch name.
-12. Stop and report blockers instead of widening scope.
+7. Before spawning any sub-agent, state in the user-facing output which step is being handed off, which model will be used, and whether that model is cheaper than the current runtime model.
+8. If isolated sub-agent worktrees are not available or are unnecessary, execute the ready steps directly while preserving the same step order and scope boundaries.
+9. Run independent steps in parallel only when the plan allows it and the runtime can isolate them safely.
+10. After each isolated sub-agent step finishes, merge the worktree back into the execution branch, delete the worktree, and resolve merge conflicts immediately if they occur.
+11. Run the relevant verification for each completed step and record the result in `execution.md`.
+12. Write `execution.md` with completed steps, deviations, verification results, blockers, and the active branch name.
+13. Stop and report blockers instead of widening scope.
 
 ## Sub-Agent Dispatch
 
@@ -40,6 +41,8 @@ Use this skill after the planner has produced an approved plan. Read the plannin
 - If the sub-agent discovers a preference conflict, have it report back instead of guessing.
 - Use a smaller, cheaper model when the step is routine and the plan does not require stronger reasoning.
 - If the current runtime model is available, prefer a sub-agent model one tier cheaper when it is still likely to succeed.
+- Before each spawn, tell the user exactly which model will be used.
+- If that model is cheaper than the current runtime model, say so explicitly. If it is the same tier or more capable, say that explicitly instead of implying a downgrade.
 - Keep the prompt narrow: the current step, the step handoff text, the relevant files, the constraints, and the expected outputs.
 - Give the sub-agent only the minimum context needed to execute the step safely.
 - Use the plan's `parallel_group` and dependency information to avoid unnecessary serialization.
@@ -63,7 +66,13 @@ Use this skill after the planner has produced an approved plan. Read the plannin
 - Summarize verification performed.
 - List any blockers, follow-up steps, or plan deviations.
 - Note which steps ran in parallel and which model tier was used for sub-agents when relevant.
+- For every spawned sub-agent, include the step id, model name, and whether it was cheaper than the current runtime model.
 - Note the branch name and any merge conflicts that were handled.
 - Confirm that `execution.md` was updated.
-- When execution is complete, give the user the planning folder path and point them to reviewer. If the runtime supports slash commands, you may suggest `/clear` and `/coding-loop-reviewer .project_planning/FEATURE`.
+- When execution is complete, tell the user explicitly to clear context first and then run the reviewer on an empty context.
+- The handoff message must include the exact next command using syntax that is correct for the current runtime.
+- For Claude Code and OpenCode, say exactly: `Please run /clear then /coding-loop-reviewer .project_planning/FEATURE on an empty context.`
+- For Codex runtimes that use the same slash-command syntax, say exactly: `Please run /clear then /coding-loop-reviewer .project_planning/FEATURE on an empty context.`
+- If a runtime uses a different syntax, define one exact sentence for that runtime and use it verbatim.
+- Do not offer to continue into reviewer from the current context.
 - The next step of the chain is reviewer.

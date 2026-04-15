@@ -56,5 +56,10 @@ Use this skill after implementation to compare the changes against the plan, sur
 - Mention any verification gaps or follow-up checks.
 - If fixes are needed, include the proposed fix plan and request confirmation before editing files.
 - Confirm that `review.md` was updated with the current review state.
-- When review is complete, give the user the planning folder path and point them to finaliser. If the runtime supports slash commands, you may suggest `/clear` and `/coding-loop-finaliser .project_planning/FEATURE`.
+- When review is complete, tell the user explicitly to clear context first and then run the finaliser on an empty context.
+- The handoff message must include the exact next command using syntax that is correct for the current runtime.
+- For Claude Code and OpenCode, say exactly: `Please run /clear then /coding-loop-finaliser .project_planning/FEATURE on an empty context.`
+- For Codex runtimes that use the same slash-command syntax, say exactly: `Please run /clear then /coding-loop-finaliser .project_planning/FEATURE on an empty context.`
+- If a runtime uses a different syntax, define one exact sentence for that runtime and use it verbatim.
+- Do not offer to continue into finaliser from the current context.
 - The next step of the chain is finaliser.

@@ -20,6 +20,10 @@ The chain is ordered as:
 - The task is execution-ready only when both `overview.md` and `plan.yaml` exist.
 - `execution.md` is the executor's handoff artifact for implementation status and verification.
 - `review.md` is the reviewer's handoff artifact for findings, review-fix work, and final pass or fail status.
+- Every stage handoff must tell the user to clear context before starting the next skill.
+- Every stage handoff must provide the exact next command in syntax that matches the current runtime.
+- Every stage handoff must include a verbatim example sentence for the current runtime and tell the agent to use that sentence exactly, with only the planning folder path substituted.
+- Do not offer to continue directly into the next skill from the current context.
 
 ## Planner
 
@@ -32,7 +36,7 @@ The chain is ordered as:
 - Do not present the document as raw file text, a quoted blob, or a fenced code block unless the user explicitly asks for raw markdown.
 - Do not write `plan.yaml` until the user has discussed the overview and explicitly asked to proceed.
 - Hand off to executor only when both files exist.
-- When planning is complete, give the user the planning folder path and the next skill to run. If the runtime supports slash commands, you may suggest `/clear` and `/coding-loop-executor .project_planning/FEATURE`.
+- When planning is complete, output the verbatim handoff sentence for executor for the current runtime. Use it exactly, with only the planning folder path substituted.
 
 ## Executor
 
@@ -41,13 +45,15 @@ The chain is ordered as:
 - Require both `overview.md` and `plan.yaml`; otherwise stop and report that planning is incomplete.
 - Create branch `cl/YYYY-MM-DD_FEATURE_NAME` before executing steps.
 - Give each implementation step its own worktree and merge it back after the sub-agent finishes.
+- Before spawning any sub-agent, announce that handoff in the user-facing output.
+- In that announcement, state the model name being used and whether it is cheaper than the current runtime model.
 - Resolve merge conflicts as they happen.
 - Ask sub-agents to keep commits minimal, with one descriptive commit preferred unless more are needed.
 - Implement only the current stage or step.
 - Prefer isolated, incremental changes.
 - Write `execution.md` with completed steps, deviations, verification results, and branch state.
 - Report blockers instead of guessing.
-- When execution is complete, give the user the planning folder path and the next skill to run. If the runtime supports slash commands, you may suggest `/clear` and `/coding-loop-reviewer .project_planning/FEATURE`.
+- When execution is complete, output the verbatim handoff sentence for reviewer for the current runtime. Use it exactly, with only the planning folder path substituted.
 
 ## Reviewer
 
@@ -58,7 +64,7 @@ The chain is ordered as:
 - Report findings before suggesting cleanup.
 - If the user confirms fixes, generate a review-scoped fix plan, implement it sequentially, and commit each fix step separately.
 - Write `review.md` with findings, fix-plan status, residual risk, and final pass or fail.
-- When review is complete, give the user the planning folder path and the next skill to run. If the runtime supports slash commands, you may suggest `/clear` and `/coding-loop-finaliser .project_planning/FEATURE`.
+- When review is complete, output the verbatim handoff sentence for finaliser for the current runtime. Use it exactly, with only the planning folder path substituted.
 
 ## Finaliser
 
@@ -79,4 +85,4 @@ The chain is ordered as:
 - Build the PR/MR title from the high-level feature name.
 - Build the PR/MR description from the `## Overview` in `overview.md` plus `**Changes:**` followed by bullet points derived from commit messages only.
 - If the remote provider is unsupported or unclear, say so explicitly.
-- When finalization is complete, tell the user that the loop is finished. If the runtime supports slash commands and they are starting a new loop, you may suggest `/clear`.
+- When finalization is complete, output the verbatim loop-finished sentence for the current runtime. Use it exactly.

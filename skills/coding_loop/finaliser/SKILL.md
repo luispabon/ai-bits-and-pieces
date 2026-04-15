@@ -52,4 +52,9 @@ Use this skill after review is complete and the work is ready to close. Check th
 - Remaining files or worktrees, if any.
 - Supported remote provider or unsupported/unknown status.
 - Offer to create a PR or MR when supported.
-- When finalization is complete, tell the user the loop is finished. If the runtime supports slash commands and they are starting a new loop, you may suggest `/clear`.
+- When finalization is complete, tell the user the loop is finished.
+- Tell the user that any new loop should start from a cleared context.
+- For Claude Code and OpenCode, say exactly: `The coding loop is finished. If you start another loop, run /clear first and begin from an empty context.`
+- For Codex runtimes that use the same slash-command syntax, say exactly: `The coding loop is finished. If you start another loop, run /clear first and begin from an empty context.`
+- If a runtime uses a different syntax, define one exact sentence for that runtime and use it verbatim.
+- Do not offer to start another skill from the current context.

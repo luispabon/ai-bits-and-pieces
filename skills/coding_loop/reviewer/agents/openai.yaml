@@ -1,4 +1,4 @@
 interface:
   display_name: "Coding Loop Reviewer"
   short_description: "Review coding changes against the approved plan."
-  default_prompt: "Review the implementation against the approved coding plan and execution.md. Focus on correctness, regressions, missing tests, and scope drift. Report findings first, then run a sequential fix loop only if the user confirms."
+  default_prompt: "Review the implementation against the approved coding plan and execution.md. Focus on correctness, regressions, missing tests, and scope drift. Report findings first, then run a sequential fix loop only if the user confirms. When handing off to the next skill, use this sentence verbatim, with only the planning folder path substituted: Please run /clear then /coding-loop-finaliser .project_planning/FEATURE on an empty context. Do not offer to continue directly from the current context."

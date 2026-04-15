@@ -26,7 +26,10 @@ Use this skill to turn a coding request into a traceable planning bundle. Write 
 13. Make it explicit that planning is not execution-ready until `plan.yaml` exists.
 14. Write `plan.yaml` only after user approval and only when the task is detailed enough that executor steps can be run without guessing.
 15. Treat the later chain steps as `executor`, `reviewer`, and `finaliser`; hand off cleanly to those skills once planning is complete.
-16. When the planner is finished, give the user the planning folder path and the next skill to run. If the runtime supports slash commands, you may suggest `/clear` and `/coding-loop-executor .project_planning/FEATURE`.
+16. When the planner is finished, tell the user explicitly to clear context first and then run the executor on an empty context.
+17. The handoff message must include the exact next command using syntax that is correct for the current runtime.
+18. Use the verbatim runtime-specific handoff sentence exactly as written below, with only the planning folder path substituted.
+19. Do not say that you can continue directly from the current context.
 
 ## Planning Artifacts
 
@@ -68,7 +71,11 @@ Recommend research when the task is domain-specific, unfamiliar, or low-confiden
 
 ## Chain Handoff
 
-- After planning is complete, give the user the planning folder path and point them to executor. If the runtime supports slash commands, you may suggest `/clear` and `/coding-loop-executor .project_planning/FEATURE`.
+- After planning is complete, hand off with an explicit clean-context instruction and the exact next command for the current runtime.
+- For Claude Code and OpenCode, say exactly: `Please run /clear then /coding-loop-executor .project_planning/FEATURE on an empty context.`
+- For Codex runtimes that use the same slash-command syntax, say exactly: `Please run /clear then /coding-loop-executor .project_planning/FEATURE on an empty context.`
+- If a runtime uses a different syntax, define one exact sentence for that runtime and use it verbatim.
+- Do not offer to continue into executor from the current context.
 - The next step of the chain is executor.
 
 ## Plan Structure

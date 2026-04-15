@@ -1,4 +1,4 @@
 interface:
   display_name: "Coding Loop Executor"
   short_description: "Execute approved coding plans in small staged steps."
-  default_prompt: "Execute the approved coding plan from overview.md and plan.yaml one stage or step at a time. Keep changes small, stay aligned to the planner artifacts, update execution.md, and report blockers clearly."
+  default_prompt: "Execute the approved coding plan from overview.md and plan.yaml one stage or step at a time. Keep changes small, stay aligned to the planner artifacts, update execution.md, and report blockers clearly. Before spawning any sub-agent, announce the handoff in user-facing output, state the exact model name being used, and say whether it is cheaper than the current runtime model. When handing off to the next skill, use this sentence verbatim, with only the planning folder path substituted: Please run /clear then /coding-loop-reviewer .project_planning/FEATURE on an empty context. Do not offer to continue directly from the current context."
