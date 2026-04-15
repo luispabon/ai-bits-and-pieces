@@ -34,7 +34,6 @@ Use this skill after review is complete and the work is ready to close. Check th
 - GitHub: first use `git push -u origin <branch>` when needed so the branch exists on the remote, then use `gh pr create --title <title> --body <body> --base <target> --head <branch>`.
 - GitLab: use `git push -o merge_request.create -o merge_request.target=<target> origin <branch>`.
 - Azure DevOps: first use `git push -u origin <branch>` when needed so the branch exists on the remote, then use `az repos pr create --title <title> --description <body> --source-branch <branch> --target-branch <target>`.
-- Gitea-compatible AGit servers: push with `git push origin HEAD:refs/for/<target> -o topic=<topic> -o title=<title> -o description=<body>` as the PR/MR creation action.
 - Bitbucket Cloud / Bitbucket Data Center: no documented standard CLI flow is available here for automatic PR creation; treat as unsupported and do not guess.
 
 ## Shared Rules

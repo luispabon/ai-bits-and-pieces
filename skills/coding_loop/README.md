@@ -88,7 +88,6 @@ The chain is ordered as:
 - GitHub: `git push -u origin <branch>` if needed, then `gh pr create --title ... --body ... --base ... --head ...`.
 - GitLab: `git push -o merge_request.create -o merge_request.target=<target> origin <branch>`.
 - Azure DevOps: `git push -u origin <branch>` if needed, then `az repos pr create --title ... --description ... --source-branch ... --target-branch ...`.
-- Gitea-compatible AGit servers: `git push origin HEAD:refs/for/<target> -o topic=... -o title=... -o description=...`.
 - Bitbucket Cloud / Data Center: unsupported for automatic PR creation in this loop.
 - Build the PR/MR title from the high-level feature name.
 - Build the PR/MR description from the `## Overview` in `overview.md` plus `**Changes:**` followed by bullet points derived from commit messages only.

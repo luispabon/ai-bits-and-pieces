@@ -1,4 +1,3 @@
 interface:
   display_name: "Coding Loop Finaliser"
   short_description: "Close out a completed coding loop with a final summary."
-  default_prompt: "Finalize the coding loop only after review.md records a passing review. Use overview.md, execution.md, and review.md to summarize outcome, remaining risk, and any follow-up clearly and briefly. End with this sentence verbatim: The coding loop is finished. If you start another loop, run /clear first and begin from an empty context. Do not offer to start another skill from the current context."
