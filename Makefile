@@ -20,6 +20,7 @@ install-skills:
 		for dest_root in $(GLOBAL_SKILL_DIRS); do \
 			mkdir -p "$$dest_root"; \
 			rm -rf "$$dest_root/$$skill_name"; \
+			echo "Installing $$skill_name -> $$dest_root/$$skill_name"; \
 			cp -R "$$skill_dir" "$$dest_root/$$skill_name"; \
 		done; \
 	done
