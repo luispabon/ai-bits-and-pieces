@@ -27,8 +27,9 @@ The chain is ordered as:
 - Ask for a high-level description if needed.
 - Delay file creation until the feature is understood.
 - Write `overview.md` first.
-- Reproduce the full `overview.md` contents in the assistant response itself and use that as the discussion checkpoint.
+- Render the full `overview.md` contents in the assistant response itself, preserving its markdown structure as normal user-facing formatting for the current medium.
 - Do not rely on shell output, tool transcripts, or summaries as a substitute for showing the document.
+- Do not present the document as raw file text, a quoted blob, or a fenced code block unless the user explicitly asks for raw markdown.
 - Do not write `plan.yaml` until the user has discussed the overview and explicitly asked to proceed.
 - Hand off to executor only when both files exist.
 - When planning is complete, give the user the planning folder path and the next skill to run. If the runtime supports slash commands, you may suggest `/clear` and `/coding-loop-executor .project_planning/FEATURE`.
