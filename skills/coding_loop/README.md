@@ -82,13 +82,15 @@ The chain is ordered as:
 - Check for uncommitted changes, untracked files, and leftover worktrees.
 - Ask the user what to do with any leftover state instead of guessing.
 - Detect the active remote provider and offer to create a PR or MR when supported.
+- Push the current branch to the default remote before any PR or MR flow that requires the branch to exist remotely.
 - Use the provider's exact CLI flow, not a guessed one.
-- GitHub: `gh pr create --title ... --body ... --base ... --head ...`.
+- GitHub: `git push -u origin <branch>` if needed, then `gh pr create --title ... --body ... --base ... --head ...`.
 - GitLab: `git push -o merge_request.create -o merge_request.target=<target> origin <branch>`.
-- Azure DevOps: `az repos pr create --title ... --description ... --source-branch ... --target-branch ...`.
+- Azure DevOps: `git push -u origin <branch>` if needed, then `az repos pr create --title ... --description ... --source-branch ... --target-branch ...`.
 - Gitea-compatible AGit servers: `git push origin HEAD:refs/for/<target> -o topic=... -o title=... -o description=...`.
 - Bitbucket Cloud / Data Center: unsupported for automatic PR creation in this loop.
 - Build the PR/MR title from the high-level feature name.
 - Build the PR/MR description from the `## Overview` in `overview.md` plus `**Changes:**` followed by bullet points derived from commit messages only.
+- Keep user-facing output brief; do not print the full PR/MR body unless the user asks for it.
 - If the remote provider is unsupported or unclear, say so explicitly.
 - When finalization is complete, output the verbatim loop-finished sentence for the current runtime. Use it exactly.

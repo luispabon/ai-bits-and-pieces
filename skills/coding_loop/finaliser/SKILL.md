@@ -20,19 +20,21 @@ Use this skill after review is complete and the work is ready to close. Check th
 6. If leftover files exist, list them and ask the user whether to commit, discard, or keep them.
 7. If leftover worktrees exist, inspect what work is in them and ask the user what to do about each one.
 8. Identify the active remote provider from the repository remote.
-9. If the provider is supported, prepare a PR or MR proposal using the provider's exact CLI flow from the matrix below.
-10. Build the PR or MR title from the high-level feature name. Keep it concise and descriptive.
-11. Build the PR or MR body from `overview.md` by reusing only the `## Overview` section, then add `**Changes:**` followed by bullet points derived from commit messages only.
-12. Ask the user to confirm before creating the PR or MR.
-13. If the provider is unsupported or unclear, say so explicitly and stop.
-14. Keep the closeout brief, factual, and limited to repository state plus release actions.
+9. If the provider is supported, determine the current branch and push it to the default remote before attempting any PR or MR creation flow.
+10. If that push fails, stop and report the failure instead of attempting PR or MR creation.
+11. Prepare the PR or MR using the provider's exact CLI flow from the matrix below.
+12. Build the PR or MR title from the high-level feature name. Keep it concise and descriptive.
+13. Build the PR or MR body from `overview.md` by reusing only the `## Overview` section, then add `**Changes:**` followed by bullet points derived from commit messages only.
+14. Ask the user to confirm before creating the PR or MR, but do not render the full PR or MR body in user-facing output unless the user asks for it.
+15. If the provider is unsupported or unclear, say so explicitly and stop.
+16. Keep the closeout brief, factual, and limited to repository state plus release actions.
 
 ## Provider Matrix
 
-- GitHub: use `gh pr create --title <title> --body <body> --base <target> --head <branch>`.
+- GitHub: first use `git push -u origin <branch>` when needed so the branch exists on the remote, then use `gh pr create --title <title> --body <body> --base <target> --head <branch>`.
 - GitLab: use `git push -o merge_request.create -o merge_request.target=<target> origin <branch>`.
-- Azure DevOps: use `az repos pr create --title <title> --description <body> --source-branch <branch> --target-branch <target>`.
-- Gitea-compatible AGit servers: use `git push origin HEAD:refs/for/<target> -o topic=<topic> -o title=<title> -o description=<body>`.
+- Azure DevOps: first use `git push -u origin <branch>` when needed so the branch exists on the remote, then use `az repos pr create --title <title> --description <body> --source-branch <branch> --target-branch <target>`.
+- Gitea-compatible AGit servers: push with `git push origin HEAD:refs/for/<target> -o topic=<topic> -o title=<title> -o description=<body>` as the PR/MR creation action.
 - Bitbucket Cloud / Bitbucket Data Center: no documented standard CLI flow is available here for automatic PR creation; treat as unsupported and do not guess.
 
 ## Shared Rules
@@ -41,8 +43,10 @@ Use this skill after review is complete and the work is ready to close. Check th
 - Do not duplicate the reviewer’s findings; synthesize them into the final status.
 - Do not guess about leftover files, worktrees, or remote provider support.
 - Do not guess about provider-specific PR or MR commands; use the matrix above.
+- Do not attempt PR or MR creation before a required branch push succeeds.
 - Do not create a PR or MR without user confirmation.
 - Do not diff-analyze the codebase to build the PR or MR body; use commit messages only for the bullet list.
+- Do not dump the full PR or MR title/body into user-facing output unless the user asks for it.
 - Do not treat a missing or failing `review.md` as good enough to finalize.
 
 ## Output
@@ -51,7 +55,7 @@ Use this skill after review is complete and the work is ready to close. Check th
 - Status from `execution.md` and `review.md`.
 - Remaining files or worktrees, if any.
 - Supported remote provider or unsupported/unknown status.
-- Offer to create a PR or MR when supported.
+- Offer to create a PR or MR when supported, after reporting push status if a separate push was required.
 - When finalization is complete, tell the user the loop is finished.
 - Tell the user that any new loop should start from a cleared context.
 - For Claude Code and OpenCode, say exactly: `The coding loop is finished. If you start another loop, run /clear first and begin from an empty context.`
