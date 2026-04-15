@@ -1,0 +1,4 @@
+interface:
+  display_name: "Coding Loop Finaliser"
+  short_description: "Close out a completed coding loop with a final summary."
+  default_prompt: "Finalize the coding loop after review passes. Summarize the outcome, remaining risk, and any follow-up clearly and briefly."

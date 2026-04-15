@@ -1,0 +1,4 @@
+interface:
+  display_name: "Coding Loop Reviewer"
+  short_description: "Review coding changes against the approved plan."
+  default_prompt: "Review the implementation against the approved coding plan. Focus on correctness, regressions, missing tests, and scope drift. Report findings first."
