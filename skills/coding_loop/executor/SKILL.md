@@ -86,7 +86,7 @@ Use this skill after the planner has produced an approved plan. Read the plannin
 - When execution is complete, tell the user explicitly to clear context first and then run the reviewer on an empty context.
 - The handoff message must include the exact next command using syntax that is correct for the current runtime.
 - For Claude Code and OpenCode, say exactly: `Please run /clear then /coding-loop-reviewer .project_planning/FEATURE on an empty context.`
-- For Codex runtimes that use the same slash-command syntax, say exactly: `Please run /clear then /coding-loop-reviewer .project_planning/FEATURE on an empty context.`
+- For Codex runtimes that use the same slash-command syntax, say exactly: `Please run /clear then $coding-loop-reviewer .project_planning/FEATURE on an empty context.`
 - If a runtime uses a different syntax, define one exact sentence for that runtime and use it verbatim.
 - Do not offer to continue into reviewer from the current context.
 - The next step of the chain is reviewer.

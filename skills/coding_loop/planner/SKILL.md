@@ -73,7 +73,7 @@ Recommend research when the task is domain-specific, unfamiliar, or low-confiden
 
 - After planning is complete, hand off with an explicit clean-context instruction and the exact next command for the current runtime.
 - For Claude Code and OpenCode, say exactly: `Please run /clear then /coding-loop-executor .project_planning/FEATURE on an empty context.`
-- For Codex runtimes that use the same slash-command syntax, say exactly: `Please run /clear then /coding-loop-executor .project_planning/FEATURE on an empty context.`
+- For Codex runtimes that use the same slash-command syntax, say exactly: `Please run /clear then $coding-loop-executor .project_planning/FEATURE on an empty context.`
 - If a runtime uses a different syntax, define one exact sentence for that runtime and use it verbatim.
 - Do not offer to continue into executor from the current context.
 - The next step of the chain is executor.
