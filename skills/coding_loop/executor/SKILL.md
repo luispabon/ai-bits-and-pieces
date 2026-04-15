@@ -58,6 +58,7 @@ Use this skill after the planner has produced an approved plan. Read the plannin
 - Use the plan's `parallel_group` and dependency information to avoid unnecessary serialization.
 - Give each sub-agent its own worktree and keep its writes isolated to that worktree.
 - Merge each worktree back to the execution branch before moving to the next dependent step.
+- Delete each sub-agent worktree immediately after its merge succeeds instead of leaving cleanup for the end of execution.
 - Ask sub-agents to use descriptive commit messages and keep commits to a minimum.
 - Prefer a single commit per sub-agent unless the work naturally requires more.
 - If work is executed directly instead of via sub-agents, preserve the same step boundaries in `execution.md`.

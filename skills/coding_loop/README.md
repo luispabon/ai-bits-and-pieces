@@ -52,6 +52,7 @@ The chain is ordered as:
 - When asking for manual verification, suggest concrete areas for the user to inspect.
 - If the user finds issues during manual verification, the executor must consolidate all issues from that pass into one fix plan, hand that single fix plan to one sub-agent, review the result, and ask for manual verification again.
 - Resolve merge conflicts as they happen.
+- The executor must delete each worktree immediately after its merge back into the execution branch succeeds.
 - Ask sub-agents to keep commits minimal, with one descriptive commit preferred unless more are needed.
 - Implement only the current stage or step.
 - Prefer isolated, incremental changes.
