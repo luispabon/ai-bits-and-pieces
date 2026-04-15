@@ -1,4 +1,4 @@
 interface:
   display_name: "Coding Loop Planner"
   short_description: "Plan coding work with research and staged plans."
-  default_prompt: "Create a coding plan under .project_planning with overview.md first. Show the overview to the user in the console, discuss it, and do not create plan.yaml until the user explicitly asks to proceed. Keep all writes confined to that directory and make each step detailed enough for safe execution without guessing."
+  default_prompt: "Create a coding plan under .project_planning with overview.md first. Then reproduce the full overview.md contents in the assistant response itself, discuss it, and do not create plan.yaml until the user explicitly asks to proceed. Do not rely on shell output or summaries as a substitute. Keep all writes confined to that directory and make each step detailed enough for safe execution without guessing."
