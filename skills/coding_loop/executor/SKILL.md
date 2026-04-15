@@ -33,12 +33,14 @@ Use this skill after the planner has produced an approved plan. Read the plannin
 12. If verification fails or exposes issues, do not fix them directly in the executor. Instead, create a detailed fix plan scoped to the failing verification, then hand that fix plan to a sub-agent just like an implementation step.
 13. After the fix sub-agent completes, review the result, rerun the relevant verification, and record the outcome in `execution.md`.
 14. Repeat that verification-fix loop until the relevant verification passes or a blocker must be reported.
-15. Once automated verification is passing, ask the user to perform manual verification or explicitly OK the changes to continue execution.
-16. In the manual verification request, suggest concrete areas of interest for the user to inspect based on the work completed.
-17. If the user reports issues, consolidate all issues from that manual verification pass into one detailed fix plan, hand that single fix plan to one sub-agent, review the result, rerun relevant verification, and then ask for manual verification or OK again.
-18. Only proceed to reviewer handoff after automated verification is passing and the user has either completed manual verification without issues or explicitly OKed the changes to continue.
-19. Write `execution.md` with completed steps, deviations, verification results, manual verification rounds, blockers, and the active branch name.
-20. Stop and report blockers instead of widening scope.
+15. Before pausing for manual verification, commit all completed implementation changes and the current `execution.md` update on the execution branch.
+16. Once automated verification is passing, ask the user to perform manual verification or explicitly OK the changes to continue execution.
+17. In the manual verification request, suggest concrete areas of interest for the user to inspect based on the work completed.
+18. If the user reports issues, consolidate all issues from that manual verification pass into one detailed fix plan, hand that single fix plan to one sub-agent, review the result, rerun relevant verification, update `execution.md`, commit the new execution-branch state, and then ask for manual verification or OK again.
+19. Only proceed to reviewer handoff after automated verification is passing and the user has either completed manual verification without issues or explicitly OKed the changes to continue.
+20. Before reviewer handoff, update `execution.md` with completed steps, deviations, verification results, manual verification rounds, blockers, and the active branch name, then commit that final executor handoff state.
+21. Ensure the execution branch working tree is clean before handing off to reviewer, unless the executor is explicitly stopping to ask the user what to do with leftover state it cannot safely resolve.
+22. Stop and report blockers instead of widening scope.
 
 ## Sub-Agent Dispatch
 
@@ -62,7 +64,8 @@ Use this skill after the planner has produced an approved plan. Read the plannin
 - Delete the merged temporary step branch immediately after removing its worktree, using the safe merged-branch path rather than leaving leftover local refs behind.
 - Ask sub-agents to use descriptive commit messages and keep commits to a minimum.
 - Prefer a single commit per sub-agent unless the work naturally requires more.
-- If work is executed directly instead of via sub-agents, preserve the same step boundaries in `execution.md`.
+- If work is executed directly instead of via sub-agents, preserve the same step boundaries in `execution.md` and commit each completed step or safe stage boundary on the execution branch.
+- After merging a sub-agent branch, commit any executor-authored follow-up changes on the execution branch before continuing. This includes `execution.md` updates, conflict resolution, and any direct cleanup that was required outside the sub-agent branch.
 
 ## Shared Rules
 
@@ -73,6 +76,7 @@ Use this skill after the planner has produced an approved plan. Read the plannin
 - Do not treat missing `plan.yaml` as approval to infer the implementation plan.
 - Do not silently skip manual verification; ask the user to verify or explicitly OK before reviewer handoff.
 - Do not fix verification failures directly in the executor when a sub-agent handoff is available.
+- Do not pause for manual verification or hand off to reviewer with uncommitted executor-owned changes on the execution branch.
 
 ## Output
 
@@ -84,7 +88,7 @@ Use this skill after the planner has produced an approved plan. Read the plannin
 - Note which steps ran in parallel and which model tier was used for sub-agents when relevant.
 - For every spawned sub-agent, include the step id, model name, and whether it was cheaper than the current runtime model.
 - Note the branch name, any merge conflicts that were handled, and any temporary step branches that were deleted after merge.
-- Confirm that `execution.md` was updated.
+- Confirm that `execution.md` was updated and that the final executor handoff state was committed.
 - When execution is complete, tell the user explicitly to clear context first and then run the reviewer on an empty context.
 - The handoff message must include the exact next command using syntax that is correct for the current runtime.
 - For Claude Code and OpenCode, say exactly: `Please run /clear then /coding-loop-reviewer .project_planning/FEATURE on an empty context.`

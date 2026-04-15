@@ -20,6 +20,8 @@ The chain is ordered as:
 - The task is execution-ready only when both `overview.md` and `plan.yaml` exist.
 - `execution.md` is the executor's handoff artifact for implementation status and verification.
 - `review.md` is the reviewer's handoff artifact for findings, review-fix work, and final pass or fail status.
+- Each stage must leave its handoff artifacts committed before handing off to the next stage.
+- A stage must not pause or hand off with a dirty main working tree unless it is explicitly stopping to ask the user what to do with leftover state.
 - Every stage handoff must tell the user to clear context before starting the next skill.
 - Every stage handoff must provide the exact next command in syntax that matches the current runtime.
 - Every stage handoff must include a verbatim example sentence for the current runtime and tell the agent to use that sentence exactly, with only the planning folder path substituted.
@@ -55,6 +57,8 @@ The chain is ordered as:
 - The executor must delete each worktree immediately after its merge back into the execution branch succeeds.
 - The executor must also delete each merged temporary step branch immediately after its worktree is removed and the branch is safe to delete.
 - Ask sub-agents to keep commits minimal, with one descriptive commit preferred unless more are needed.
+- Before any pause for manual verification, the executor must commit all completed implementation changes plus the current `execution.md` update on the execution branch.
+- Before handoff to reviewer, the executor must ensure the execution branch working tree is clean and that the final `execution.md` state is committed.
 - Implement only the current stage or step.
 - Prefer isolated, incremental changes.
 - Write `execution.md` with completed steps, deviations, verification results, and branch state.
