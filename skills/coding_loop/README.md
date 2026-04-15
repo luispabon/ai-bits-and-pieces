@@ -68,6 +68,7 @@ The chain is ordered as:
 - Report findings before suggesting cleanup.
 - If the user confirms fixes, generate a review-scoped fix plan, implement it sequentially, and commit each fix step separately.
 - Write `review.md` with findings, fix-plan status, residual risk, and final pass or fail.
+- After the review passes, commit the `review.md` update with a descriptive review-status commit before handing off to finaliser.
 - When review is complete, output the verbatim handoff sentence for finaliser for the current runtime. Use it exactly, with only the planning folder path substituted.
 
 ## Finaliser

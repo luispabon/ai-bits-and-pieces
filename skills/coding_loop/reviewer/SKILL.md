@@ -33,14 +33,14 @@ Use this skill after implementation to compare the changes against the plan, sur
 7. Classify findings by severity and impact.
 8. Prefer evidence over speculation.
 9. Keep the review focused on the current chain step.
-10. If there are no issues, write `review.md` with a passing review result plus any residual risks or missing validation.
-11. If issues exist, write `review.md` with findings and a concrete fix plan scoped only to those findings.
-12. Ask the user to confirm the fix plan before implementing it.
-13. After confirmation, execute the fix plan sequentially.
-14. Commit each fix step separately with a descriptive message tied to that step.
-15. Limit fixes to reported issues and directly necessary follow-up changes. Do not widen scope into unrelated cleanup.
-16. Re-run relevant checks after each fix step or at the end when that is the safer and more efficient validation boundary.
-17. Restart the review from the top against the updated tree, then update `review.md` with final pass or fail status.
+10. If issues exist, design a concrete fix plan scoped only to those findings.
+11. Ask the user to confirm the fix plan before implementing it.
+12. After confirmation, execute the fix plan sequentially.
+13. Commit each fix step separately with a descriptive message tied to that step.
+14. Limit fixes to reported issues and directly necessary follow-up changes. Do not widen scope into unrelated cleanup.
+15. Re-run relevant checks after each fix step or at the end when that is the safer and more efficient validation boundary.
+16. Restart the review from the top against the updated tree, then update `review.md` with final pass or fail status.
+17. When the review finally passes, commit the final `review.md` update before handing off to finaliser.
 
 ## Shared Rules
 
@@ -56,10 +56,11 @@ Use this skill after implementation to compare the changes against the plan, sur
 - Mention any verification gaps or follow-up checks.
 - If fixes are needed, include the proposed fix plan and request confirmation before editing files.
 - Confirm that `review.md` was updated with the current review state.
+- If the review passes, confirm that the passing `review.md` update was committed before the handoff.
 - When review is complete, tell the user explicitly to clear context first and then run the finaliser on an empty context.
 - The handoff message must include the exact next command using syntax that is correct for the current runtime.
 - For Claude Code and OpenCode, say exactly: `Please run /clear then /coding-loop-finaliser .project_planning/FEATURE on an empty context.`
-- For Codex runtimes that use the same slash-command syntax, say exactly: `Please run /clear then /coding-loop-finaliser .project_planning/FEATURE on an empty context.`
+- For Codex runtimes that use the same slash-command syntax, say exactly: `Please run /clear then $coding-loop-finaliser .project_planning/FEATURE on an empty context.`
 - If a runtime uses a different syntax, define one exact sentence for that runtime and use it verbatim.
 - Do not offer to continue into finaliser from the current context.
 - The next step of the chain is finaliser.
