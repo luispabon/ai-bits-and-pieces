@@ -30,8 +30,15 @@ Use this skill after the planner has produced an approved plan. Read the plannin
 9. Run independent steps in parallel only when the plan allows it and the runtime can isolate them safely.
 10. After each isolated sub-agent step finishes, merge the worktree back into the execution branch, delete the worktree, and resolve merge conflicts immediately if they occur.
 11. Run the relevant verification for each completed step and record the result in `execution.md`.
-12. Write `execution.md` with completed steps, deviations, verification results, blockers, and the active branch name.
-13. Stop and report blockers instead of widening scope.
+12. If verification fails or exposes issues, do not fix them directly in the executor. Instead, create a detailed fix plan scoped to the failing verification, then hand that fix plan to a sub-agent just like an implementation step.
+13. After the fix sub-agent completes, review the result, rerun the relevant verification, and record the outcome in `execution.md`.
+14. Repeat that verification-fix loop until the relevant verification passes or a blocker must be reported.
+15. Once automated verification is passing, ask the user to perform manual verification or explicitly OK the changes to continue execution.
+16. In the manual verification request, suggest concrete areas of interest for the user to inspect based on the work completed.
+17. If the user reports issues, consolidate all issues from that manual verification pass into one detailed fix plan, hand that single fix plan to one sub-agent, review the result, rerun relevant verification, and then ask for manual verification or OK again.
+18. Only proceed to reviewer handoff after automated verification is passing and the user has either completed manual verification without issues or explicitly OKed the changes to continue.
+19. Write `execution.md` with completed steps, deviations, verification results, manual verification rounds, blockers, and the active branch name.
+20. Stop and report blockers instead of widening scope.
 
 ## Sub-Agent Dispatch
 
@@ -43,6 +50,9 @@ Use this skill after the planner has produced an approved plan. Read the plannin
 - If the current runtime model is available, prefer a sub-agent model one tier cheaper when it is still likely to succeed.
 - Before each spawn, tell the user exactly which model will be used.
 - If that model is cheaper than the current runtime model, say so explicitly. If it is the same tier or more capable, say that explicitly instead of implying a downgrade.
+- Use the same dispatch rules for verification-fix work as for planned implementation steps.
+- For verification-fix work, write a detailed fix plan first, then pass that plan to the sub-agent instead of a vague repair request.
+- For each manual verification pass, group all user-reported issues into one fix plan and use one sub-agent to address that whole pass.
 - Keep the prompt narrow: the current step, the step handoff text, the relevant files, the constraints, and the expected outputs.
 - Give the sub-agent only the minimum context needed to execute the step safely.
 - Use the plan's `parallel_group` and dependency information to avoid unnecessary serialization.
@@ -59,11 +69,15 @@ Use this skill after the planner has produced an approved plan. Read the plannin
 - Do not drift into review or finalization work unless explicitly handed off.
 - Do not guess when the planning folder is wrong or incomplete.
 - Do not treat missing `plan.yaml` as approval to infer the implementation plan.
+- Do not silently skip manual verification; ask the user to verify or explicitly OK before reviewer handoff.
+- Do not fix verification failures directly in the executor when a sub-agent handoff is available.
 
 ## Output
 
 - Summarize what changed.
 - Summarize verification performed.
+- Summarize any verification-fix plans that were created and handed to sub-agents.
+- Summarize manual verification rounds and the user's response, including any explicit OK to continue.
 - List any blockers, follow-up steps, or plan deviations.
 - Note which steps ran in parallel and which model tier was used for sub-agents when relevant.
 - For every spawned sub-agent, include the step id, model name, and whether it was cheaper than the current runtime model.
@@ -76,3 +90,17 @@ Use this skill after the planner has produced an approved plan. Read the plannin
 - If a runtime uses a different syntax, define one exact sentence for that runtime and use it verbatim.
 - Do not offer to continue into reviewer from the current context.
 - The next step of the chain is reviewer.
+
+## Manual Verification Prompt
+
+Before reviewer handoff, ask the user to verify the work manually or explicitly OK the changes to continue.
+
+The request must:
+
+- mention that automated verification has passed, if that is true
+- suggest concrete areas to inspect based on the completed work
+- allow the user either to report issues or to say OK and continue
+
+Example structure:
+
+`Automated verification is passing. Please manually verify the updated areas, especially <area 1>, <area 2>, and <area 3>. If you find issues, tell me what to fix. If everything looks good, reply OK to continue.`

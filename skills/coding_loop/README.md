@@ -47,6 +47,10 @@ The chain is ordered as:
 - Give each implementation step its own worktree and merge it back after the sub-agent finishes.
 - Before spawning any sub-agent, announce that handoff in the user-facing output.
 - In that announcement, state the model name being used and whether it is cheaper than the current runtime model.
+- If verification finds issues, the executor must not fix them directly; it must create a fix plan and hand that fix plan to a sub-agent.
+- Before handoff to reviewer, the executor must ask the user to perform manual verification or explicitly OK the changes to continue.
+- When asking for manual verification, suggest concrete areas for the user to inspect.
+- If the user finds issues during manual verification, the executor must consolidate all issues from that pass into one fix plan, hand that single fix plan to one sub-agent, review the result, and ask for manual verification again.
 - Resolve merge conflicts as they happen.
 - Ask sub-agents to keep commits minimal, with one descriptive commit preferred unless more are needed.
 - Implement only the current stage or step.
