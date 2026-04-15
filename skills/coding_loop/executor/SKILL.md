@@ -28,7 +28,7 @@ Use this skill after the planner has produced an approved plan. Read the plannin
 7. Before spawning any sub-agent, state in the user-facing output which step is being handed off, which model will be used, and whether that model is cheaper than the current runtime model.
 8. If isolated sub-agent worktrees are not available or are unnecessary, execute the ready steps directly while preserving the same step order and scope boundaries.
 9. Run independent steps in parallel only when the plan allows it and the runtime can isolate them safely.
-10. After each isolated sub-agent step finishes, merge the worktree back into the execution branch, delete the worktree, and resolve merge conflicts immediately if they occur.
+10. After each isolated sub-agent step finishes, merge the worktree back into the execution branch, delete the worktree, delete the merged temporary step branch when it is no longer needed, and resolve merge conflicts immediately if they occur.
 11. Run the relevant verification for each completed step and record the result in `execution.md`.
 12. If verification fails or exposes issues, do not fix them directly in the executor. Instead, create a detailed fix plan scoped to the failing verification, then hand that fix plan to a sub-agent just like an implementation step.
 13. After the fix sub-agent completes, review the result, rerun the relevant verification, and record the outcome in `execution.md`.
@@ -59,6 +59,7 @@ Use this skill after the planner has produced an approved plan. Read the plannin
 - Give each sub-agent its own worktree and keep its writes isolated to that worktree.
 - Merge each worktree back to the execution branch before moving to the next dependent step.
 - Delete each sub-agent worktree immediately after its merge succeeds instead of leaving cleanup for the end of execution.
+- Delete the merged temporary step branch immediately after removing its worktree, using the safe merged-branch path rather than leaving leftover local refs behind.
 - Ask sub-agents to use descriptive commit messages and keep commits to a minimum.
 - Prefer a single commit per sub-agent unless the work naturally requires more.
 - If work is executed directly instead of via sub-agents, preserve the same step boundaries in `execution.md`.
@@ -82,7 +83,7 @@ Use this skill after the planner has produced an approved plan. Read the plannin
 - List any blockers, follow-up steps, or plan deviations.
 - Note which steps ran in parallel and which model tier was used for sub-agents when relevant.
 - For every spawned sub-agent, include the step id, model name, and whether it was cheaper than the current runtime model.
-- Note the branch name and any merge conflicts that were handled.
+- Note the branch name, any merge conflicts that were handled, and any temporary step branches that were deleted after merge.
 - Confirm that `execution.md` was updated.
 - When execution is complete, tell the user explicitly to clear context first and then run the reviewer on an empty context.
 - The handoff message must include the exact next command using syntax that is correct for the current runtime.
