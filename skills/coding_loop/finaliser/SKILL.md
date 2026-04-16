@@ -9,7 +9,7 @@ description: Close out a completed coding loop by validating final chain readine
 
 Use this skill after review is complete and the work is ready to close. Validate that the coding loop actually reached finaliser-ready state, inspect the repository for leftover state, and optionally prepare and create a PR or MR when the remote provider is supported.
 
-Treat the planning folder and the current feature branch as the authoritative sources of truth for closeout.
+Treat the planning folder and the expected feature branch as the authoritative sources of truth for closeout.
 
 ## Input Contract
 
@@ -77,6 +77,8 @@ If any of these checks fail, stop and report that finalization cannot proceed ye
 4. If the expected branch does not exist, stop and report incomplete chain handoff.
 5. If the current branch does not match the expected feature branch and cannot be safely switched, stop and report the mismatch.
 
+After branch setup, all repository inspection, push operations, and PR or MR actions must use the expected feature branch only.
+
 ## Repository State Inspection
 
 Inspect the repository only enough to determine finalization readiness and leftover state.
@@ -98,6 +100,7 @@ For leftover worktrees, inspect only enough to determine:
 - associated branch
 - whether the worktree is clean or dirty
 - whether unmerged or uncommitted work appears to exist
+- whether the branch appears to be a loop-generated temporary branch
 
 Do not deep-inspect the contents of leftover worktrees.
 
@@ -130,7 +133,13 @@ Do not guess how to resolve leftovers.
 
 Do not delete ambiguous worktrees or branches without explicit user approval.
 
-Do not proceed to push or PR/MR creation until leftover state is resolved or the user explicitly chooses to proceed.
+If the user approves deletion of a leftover temporary branch or worktree and it is clearly loop-generated and already merged, the finaliser may delete it.
+
+If the branch or worktree is ambiguous, dirty, not clearly loop-generated, or not clearly merged, the finaliser must not delete it without explicit confirmation for that specific item.
+
+Do not proceed to push or PR or MR creation until leftover state is resolved or the user explicitly chooses to proceed.
+
+If the user chooses to keep unresolved leftovers, stop and report that closeout is incomplete by user choice.
 
 ## Feature Intent and Summary Source
 
@@ -151,7 +160,7 @@ Identify the remote provider from repository remotes.
 
 Use this order:
 
-1. the remote tracking the current feature branch, if configured
+1. the remote tracking the expected feature branch, if configured
 2. otherwise `origin`
 3. if neither yields a clear supported provider, stop and report ambiguity or unsupported provider
 
@@ -161,7 +170,11 @@ Determine:
 - remote URL
 - provider type
 - current feature branch
-- likely default target branch when it can be determined safely
+- target branch, when it can be determined safely
+
+Use the selected remote consistently for push and PR or MR creation. Do not detect one remote and execute against another.
+
+If the target branch cannot be determined safely, stop and ask the user once.
 
 If the provider is unsupported or unclear, say so explicitly and stop before PR or MR creation.
 
@@ -169,9 +182,9 @@ If the provider is unsupported or unclear, say so explicitly and stop before PR 
 
 Use only the exact provider flows below. Do not guess provider-specific commands.
 
-- GitHub: first use `git push -u origin <branch>` when needed so the branch exists on the remote, then use `gh pr create --title <title> --body <body> --base <target> --head <branch>`.
-- GitLab: use `git push -o merge_request.create -o merge_request.target=<target> origin <branch>`.
-- Azure DevOps: first use `git push -u origin <branch>` when needed so the branch exists on the remote, then use `az repos pr create --title <title> --description <body> --source-branch <branch> --target-branch <target>`.
+- GitHub: first use `git push -u <remote> <branch>` when needed so the branch exists on the remote, then use `gh pr create --title <title> --body <body> --base <target> --head <branch>`.
+- GitLab: use `git push -o merge_request.create -o merge_request.target=<target> <remote> <branch>`.
+- Azure DevOps: first use `git push -u <remote> <branch>` when needed so the branch exists on the remote, then use `az repos pr create --title <title> --description <body> --source-branch <branch> --target-branch <target>`.
 - Bitbucket Cloud / Bitbucket Data Center: no documented standard CLI flow is available here for automatic PR creation; treat as unsupported and do not guess.
 
 ## PR or MR Preparation
@@ -185,7 +198,7 @@ If the provider is supported:
 5. Build the PR or MR body from:
    - the `## Overview` section from `overview.md`
    - then `**Changes:**`
-   - then bullet points derived from commit messages only
+   - then bullet points derived from relevant non-merge commit messages for this loop only
 6. Do not diff-analyze the codebase to build the PR or MR body.
 7. Do not render the full PR or MR body in user-facing output unless the user asks for it.
 8. Present a concise summary of:
@@ -207,7 +220,7 @@ After explicit user confirmation:
 
 - GitLab:
   1. Use the documented push-based MR creation flow:
-     - `git push -o merge_request.create -o merge_request.target=<target> origin <branch>`
+     - `git push -o merge_request.create -o merge_request.target=<target> <remote> <branch>`
 
 - Azure DevOps:
   1. Ensure the branch push has already succeeded if required.
@@ -229,6 +242,8 @@ If creation fails, report the failure clearly and stop.
 - Do not dump the full PR or MR title or body into user-facing output unless the user asks for it.
 - Do not treat a missing or failing `review.md` as good enough to finalize.
 - Do not deep-inspect leftover worktrees beyond branch and cleanliness state.
+- Do not create new commits during finalization unless the user explicitly instructs the finaliser to commit leftover changes.
+- Do not rebase, squash, rewrite history, or merge target-branch changes during finalization unless the user explicitly asks.
 - Keep closeout brief, factual, and limited to repository state plus release actions.
 
 ## Loop Completion Rule
@@ -240,6 +255,10 @@ The coding loop is finished when final repository state has been inspected, any 
 - been determined unsupported
 - been skipped because the user chose not to proceed
 
+Unsupported provider status does not invalidate the coding loop itself. It only prevents automatic PR or MR creation.
+
+If the user chooses to keep unresolved leftovers and stop, the coding loop is not finalized for PR or MR purposes and closeout is incomplete by user choice.
+
 ## Output
 
 Structure finalizer output in this order:
@@ -248,7 +267,7 @@ Structure finalizer output in this order:
 2. status synthesized from `execution.md` and `review.md`
 3. remaining files, worktrees, branches, or other leftover state, if any
 4. supported remote provider status or unsupported or unknown provider status
-5. PR or MR action taken, pending, declined, or unsupported
+5. PR or MR action taken, pending, declined, unsupported, or blocked
 6. loop finished message when applicable
 
 When finalization is complete:
