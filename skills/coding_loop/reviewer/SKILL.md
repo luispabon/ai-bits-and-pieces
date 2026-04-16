@@ -277,7 +277,7 @@ When the user approves a reviewer fix plan:
    - the approved fix plan
    - the relevant files
    - the constraints
-   - the verification strategy from `overview.md`
+   - the structured verification strategy from `overview.md`
    - any known coding standards, formatting rules, linting rules, test-running preferences, and repo instructions
    - the executor-recorded verification behaviour from `execution.md` when relevant
 5. Tell the sub-agent to do its own local preflight check for any additional applicable repo preferences before implementing.
@@ -323,8 +323,9 @@ Do not rediscover verification commands from scratch unless the overview strateg
 After a reviewer fix pass:
 
 1. rerun the smallest relevant checks first
-2. rerun broader checks only when required by repo policy or when the focused checks are not sufficient confidence
-3. record the verification reruns and results in `review.md`
+2. when a tool supports a safe fix mode and the planner-recorded strategy marks fix mode as preferred, use that fix mode rather than a redundant check-then-fix sequence
+3. rerun broader checks only when required by repo policy or when the focused checks are not sufficient confidence
+4. record the verification reruns and results in `review.md`
 
 Prefer token-conscious validation. Do not rerun broad expensive checks casually when narrower checks provide sufficient signal.
 
