@@ -1,7 +1,3 @@
-
-# coding-loop-executor
-
-```md
 ---
 name: coding-loop-executor
 description: Execute an approved coding plan in staged steps with tight scope control, planner-defined verification strategy, deferred automated verification by default, and mandatory isolated sub-agent dispatch when the runtime supports safe worktree execution. Use when planning is complete and the task should be implemented from the planner's artifacts.
@@ -162,11 +158,16 @@ Before executing implementation steps:
 
 1. Read the `## Verification Strategy` section from `overview.md`.
 2. Extract:
-   - commands
+   - sources consulted
+   - defaults
+   - command groups
+   - preferred modes
+   - fix commands
+   - check commands
+   - check-only conditions
    - cheap, medium, and expensive tiers
-   - execution-stage verification timing
-   - formatter fix-versus-check policy
-   - any required exceptions or repo-mandated boundaries
+   - required boundaries
+   - assumptions and uncertainties
 3. Record the loaded strategy in `execution.md`.
 
 Do not rediscover verification commands by default.
@@ -196,7 +197,7 @@ Prefer, in order:
 
 By default, do not run automated verification after each implementation sub-agent completes.
 
-Instead, complete all planned implementation steps first, then run the discovered verification suite at the end of the implementation phase.
+Instead, complete all planned implementation steps first, then run the verification suite defined by the planner-recorded strategy at the end of the implementation phase.
 
 Run step-level or stage-level verification earlier only when at least one of the following is true:
 
@@ -205,13 +206,19 @@ Run step-level or stage-level verification earlier only when at least one of the
 - the planner-recorded verification strategy explicitly requires it
 - the executor identifies a high-risk change where deferring all verification would be unsafe
 
-If a formatting tool supports safe automatic fixing, prefer the formatter's fix mode over a separate check mode for files in scope.
+When a verification tool supports a safe fix mode, treat that fix mode as the preferred command by default.
 
-Do not run a formatter check and then a formatter fix when the fix command already provides equivalent validation signal.
+Do not run the corresponding check-only command first when the fix command already provides equivalent validation signal.
 
-Use formatter check mode only when fix mode is unavailable, unsafe, explicitly disallowed by repo policy, or would create excessive out-of-scope churn.
+Use check-only mode only when:
 
-Prefer fixing or checking only touched files or the narrowest relevant package or subtree. Avoid repo-wide formatting unless repo policy explicitly requires it.
+- the planner-recorded strategy marks the preferred mode as `check`
+- the planner-recorded strategy marks the preferred mode as `fix_when_available` but the fix command is unavailable in practice
+- fix mode is unsafe
+- repo policy explicitly requires check-only
+- fix mode would create excessive out-of-scope churn
+
+Prefer fixing or checking only touched files or the narrowest relevant package or subtree. Avoid repo-wide formatting unless repo policy explicitly requires it or the planner-recorded strategy explicitly allows it.
 
 ## Verification Outcomes
 
@@ -339,7 +346,7 @@ For each spawned implementation sub-agent:
    - the relevant files
    - the constraints
    - the expected outputs
-   - the verification strategy loaded from `overview.md`
+   - the structured verification strategy loaded from `overview.md`
    - any known coding standards, formatting rules, linting rules, test-running preferences, and repo instructions
 4. Tell the sub-agent to do its own local preflight check for any additional applicable repo preferences before implementing.
 5. If the sub-agent discovers a preference conflict, have it report back instead of guessing.

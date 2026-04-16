@@ -194,14 +194,35 @@ Prefer this order:
 Identify, when available:
 
 - formatter commands
-- static analysis
-- lint checks
-- type checks
-- unit tests
-- integration tests
-- end-to-end tests
-- build or compile validation
+- lint commands
+- type-check commands
+- unit test commands
+- integration test commands
+- end-to-end test commands
+- build or compile validation commands
 - any repo-mandated verification commands
+
+For each verification tool or command group, determine:
+
+- whether it supports a safe fix mode
+- the preferred mode:
+  - `fix`
+  - `fix_when_available`
+  - `check`
+- the fix command, when available
+- the check command, when available
+- when check-only mode must be used instead of fix mode
+
+When a verification tool supports a safe fix mode, treat that fix mode as the preferred command by default.
+
+Do not record a check-only command as the default when safe fix mode already provides equivalent validation signal.
+
+Use check-only mode as preferred only when:
+
+- fix mode is unavailable
+- fix mode is unsafe
+- repo policy explicitly requires check-only
+- fix mode would create excessive out-of-scope churn
 
 Classify discovered checks into:
 
@@ -232,6 +253,75 @@ Allowed planning artifacts:
 Do not write any planning artifact outside `.project_planning/YYYY-MM-DD_FEATURE_NAME/`.
 
 Do not write implementation files from this skill.
+
+## Verification Strategy Format
+
+The `## Verification Strategy` section in `overview.md` must use this structured markdown format:
+
+```md
+## Verification Strategy
+
+### Sources
+- <source 1>
+- <source 2>
+
+### Defaults
+- execution_verification_timing: deferred_until_end_of_implementation|step_or_stage_exceptions_only|other_specific_value
+- reviewer_verification_timing: rerun_minimal_relevant_checks_first|other_specific_value
+- broad_expensive_checks_default: late_only|earlier_required|other_specific_value
+- repo_wide_formatting_allowed: true|false
+
+### Commands
+
+#### <command-group-name>
+- preferred_mode: fix|fix_when_available|check
+- fix:
+  - `<fix command 1>`
+  - `<fix command 2>`
+- check:
+  - `<check command 1>`
+  - `<check command 2>`
+- use_check_only_when:
+  - <condition 1>
+  - <condition 2>
+
+#### <command-group-name-2>
+- preferred_mode: fix|fix_when_available|check
+- fix:
+  - `<fix command>`
+- check:
+  - `<check command>`
+- use_check_only_when:
+  - <condition>
+
+### Tiers
+- cheap:
+  - <command-group-name>
+  - <command-group-name>
+- medium:
+  - <command-group-name>
+- expensive:
+  - <command-group-name>
+
+### Required Boundaries
+- step_level_exceptions:
+  - <required exception or `none`>
+- stage_level_exceptions:
+  - <required exception or `none`>
+- end_of_implementation:
+  - <command-group-name>
+  - <command-group-name>
+- reviewer_after_fix:
+  - <rule>
+  - <rule>
+
+### Assumptions
+- <assumption 1>
+- <assumption 2>
+
+### Uncertainties
+- <uncertainty 1>
+- <uncertainty 2>
 
 ## Planning Branch
 
@@ -350,3 +440,4 @@ stages:
         acceptance: []
         handoff: Short sub-agent handoff summary
         verification: []
+```
