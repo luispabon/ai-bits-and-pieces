@@ -1,6 +1,6 @@
 ---
 name: coding-loop-planner
-description: Plan coding work in stages with optional sub-agent research, a high-level overview first, and planning artifacts written only under .project_planning/YYYY-MM-DD_FEATURE_NAME/. Use when invoked by name or when asked to plan a feature, refactor, migration, or other code change. If only the skill name is given, ask for a high-level description first before writing any planning files.
+description: Plan coding work in stages with a mandatory research-decision checkpoint, a high-level overview first, and planning artifacts written only under .project_planning/YYYY-MM-DD_FEATURE_NAME/. Use when invoked by name or when asked to plan a feature, refactor, migration, or other code change. If only the skill name is given, ask for a high-level description first before writing any planning files.
 ---
 
 # Coding Loop Planner
@@ -9,46 +9,240 @@ description: Plan coding work in stages with optional sub-agent research, a high
 
 Use this skill to turn a coding request into a traceable planning bundle. Write planning artifacts only under `.project_planning/YYYY-MM-DD_FEATURE_NAME/`, where `FEATURE_NAME` is a short filesystem-safe slug for the task.
 
-## Workflow
+Run with normal coding-agent file access so planning artifacts can be created, but do not modify implementation files from this skill.
 
-1. Run in normal coding-agent mode, not a planning-only mode, so the agent can write planning files.
-2. If the user only invokes the skill name or gives an underspecified request, ask for a high-level description first.
-3. Do not create `.project_planning/YYYY-MM-DD_FEATURE_NAME/` or write any planning files until the feature is well understood.
-4. Once the scope is clear, create `.project_planning/YYYY-MM-DD_FEATURE_NAME/`.
-5. Write `overview.md` with separate sections for the user's request, the high-level plan overview, and the decision log.
-6. Render the full `overview.md` contents in the assistant response immediately after writing it. Preserve headings, lists, and emphasis as normal user-facing formatting for the current medium. Do not treat the file as an internal artifact only.
-7. Use the displayed overview as a required discussion and approval checkpoint. Ask for corrections, missing detail, or approval to continue.
-8. Do not write `plan.yaml`, start research, or hand off to executor until the user has explicitly asked to proceed beyond the overview checkpoint.
-9. If the task is ambiguous, risky, or unfamiliar, recommend research as part of the overview discussion. If confidence is already high and the task is straightforward, skip research.
-10. Ask clarifying questions whenever the request is ambiguous or blocked, before or after research.
-11. If research is needed or chosen after the overview checkpoint, spawn a sub-agent with the smallest possible prompt, a cheaper but still capable model, and write permission limited to the same planning directory.
-12. Wait for research to finish, review it, then use it to refine the plan.
-13. Make it explicit that planning is not execution-ready until `plan.yaml` exists.
-14. Write `plan.yaml` only after user approval and only when the task is detailed enough that executor steps can be run without guessing.
-15. Treat the later chain steps as `executor`, `reviewer`, and `finaliser`; hand off cleanly to those skills once planning is complete.
-16. When the planner is finished, tell the user explicitly to clear context first and then run the executor on an empty context.
-17. The handoff message must include the exact next command using syntax that is correct for the current runtime.
-18. Use the verbatim runtime-specific handoff sentence exactly as written below, with only the planning folder path substituted.
-19. Do not say that you can continue directly from the current context.
+## Phases
+
+Follow this sequence strictly:
+
+1. Intake
+2. Clarification
+3. Research decision
+4. Optional research
+5. Overview checkpoint
+6. Detailed planning
+7. Handoff
+
+Do not skip forward. Do not reorder these phases.
+
+## Artifact Gates
+
+These gates are mandatory:
+
+- Do not create `.project_planning/YYYY-MM-DD_FEATURE_NAME/` until the user has approved the next path:
+  - proceeding without research, or
+  - running research
+- If proceeding without research, create the planning directory immediately before writing `overview.md`.
+- If proceeding with research, create the planning directory immediately before launching the research sub-agent.
+- Do not write any planning artifact before the research decision is resolved.
+- Do not write `overview.md` until:
+  - the request is sufficiently understood to produce a reliable overview
+  - the research decision is resolved
+  - any approved research is complete
+- Do not write `plan.yaml` until:
+  - `overview.md` exists
+  - the user has explicitly approved moving beyond the overview checkpoint
+
+Planning is execution-ready only when all of the following are true:
+
+- `overview.md` exists
+- `plan.yaml` exists
+- the planning branch exists
+- the latest planning artifacts have been committed to that branch
+
+## Intake
+
+1. Run in normal coding-agent mode, not a planning-only mode, so the agent can create planning artifacts.
+2. If the user only invokes the skill name or gives an underspecified request, ask for the minimum high-level description needed before doing anything else.
+3. Do not write planning files during intake.
+
+## Clarification
+
+Start by expanding the user's summary into:
+
+- goals
+- constraints
+- assumptions
+- likely code areas
+- external dependencies
+- risks
+- open questions
+
+Ask only the minimum clarifying questions needed to:
+
+- remove blockers
+- decide whether research is needed
+- avoid producing a misleading overview
+
+Do not ask implementation-detail questions before the overview checkpoint unless they materially affect scope, architecture, or the research decision.
+
+There are two understanding thresholds:
+
+1. Sufficiently understood to decide whether research is needed
+2. Sufficiently understood to produce a reliable overview
+
+Do not treat these as the same threshold.
+
+## Research Decision
+
+This decision always happens before `overview.md`.
+
+After initial clarification, decide whether the task is simple enough to plan from existing knowledge and current context, or whether research is warranted.
+
+Research is warranted when:
+
+- the task is domain-specific, unfamiliar, risky, fast-moving, or low-confidence
+- the request depends on current external information, third-party tooling, APIs, frameworks, or best practices
+- uncertainty is still high enough that it could materially change the overview, staging, risks, or acceptance criteria
+
+Research may be skipped when:
+
+- the task is straightforward
+- the planner already has enough reliable context to flesh out the request properly
+- the likely overview would not materially change based on external investigation
+
+When making the research decision, the assistant response must include:
+
+- current understanding
+- assumptions or missing pieces, if any
+- whether research is needed or not needed
+- brief reasons for that decision
+- the exact next choices for the user
+
+### If research is not needed
+
+The planner must:
+
+1. Tell the user that research is not needed
+2. Explain why
+3. Offer the user the choice to:
+   - continue without research, or
+   - trigger research anyway
+4. Wait for the user's response
+
+Do not create the planning directory yet. Do not write `overview.md` yet.
+
+### If research is needed or recommended
+
+The planner must:
+
+1. Tell the user that research is needed or recommended
+2. Explain why
+3. Summarize what questions the research sub-agent will answer
+4. Wait for the user's approval before running research
+
+After approval, the planner must spawn a research sub-agent. Do not replace this with the planner's own reasoning or a brief summary from prior knowledge.
+
+Do not create the planning directory until the user approves research.
+
+## Research Rule
+
+Research happens before `overview.md`, never after it.
+
+If the user chooses research, or if the planner has told the user that research is needed or recommended and the user approves it, the planner must run research by spawning a sub-agent. The planner must not satisfy the research phase using only its own reasoning.
+
+If research is approved:
+
+1. Create `.project_planning/YYYY-MM-DD_FEATURE_NAME/`
+2. Spawn a sub-agent with the smallest possible prompt that ensures your questions are addressed in full
+3. Give it only the minimum parent context needed
+4. Restrict its writes to the same planning directory
+5. Prefer a smaller, cheaper, still-good model
+6. Require the sub-agent to browse the internet for relevant current information
+7. Wait for the result
+8. Review the result before writing `overview.md`
+9. Ask follow-up clarifying questions if the findings reveal unresolved decisions
+
+Research may refine the plan, dependencies, risks, and approach, but it must not silently change the user's requested scope.
+
+If research suggests a materially different scope, architecture, or direction, surface that explicitly at the next checkpoint instead of silently folding it in.
+
+Research is considered complete only when a research artifact written by the research sub-agent exists in the planning directory.
+
+Do not write `overview.md` until the research sub-agent has completed and its output has been reviewed.
+
+## Research Output Contract
+
+Research artifacts must be written only under the planning directory and should use `research.md`, `research_001.md`, `research_002.md`, and so on.
+
+Each research artifact should include:
+
+- `## Question`
+- `## Findings`
+- `## Implications`
+- `## Risks and Uncertainties`
+- `## Sources`
+- `## Open Questions`
+
+Keep research tightly scoped to the questions that matter for planning.
 
 ## Planning Artifacts
 
-- `overview.md`: a single document with `## Request`, `## Overview`, and `## Decision Log` sections.
-- `plan.yaml`: the staged implementation plan.
-- `research.md`, `research_001.md`, etc.: research artifacts from sub-agents.
-- Planning is execution-ready only when both `overview.md` and `plan.yaml` exist.
-- `overview.md` must be rendered in the assistant response and discussed before `plan.yaml` is created.
+Allowed planning artifacts:
+
+- `overview.md`: a single document with `## Request`, `## Overview`, and `## Decision Log` sections
+- `plan.yaml`: the staged implementation plan
+- `research.md`, `research_001.md`, etc.: research artifacts from sub-agents
+
+Do not write any planning artifact outside `.project_planning/YYYY-MM-DD_FEATURE_NAME/`.
+
+Do not write implementation files from this skill.
+
+## Planning Branch
+
+The planner owns creation and maintenance of the feature execution branch.
+
+Do not create the branch before the user approves `overview.md`.
+
+When the user approves the overview:
+
+1. Derive a git branch name in the form `cl/YYYY-MM-DD_FEATURE_NAME` from the planning folder
+2. Create that branch immediately before committing the approved overview state
+3. Commit the approved planning artifacts to that branch immediately
+4. Include:
+   - `overview.md`
+   - any research artifacts that informed the approved overview
+5. Use a clear planning commit message such as:
+   - `plan: approve overview`
+6. If the branch name cannot be derived safely from the planning folder path, stop and report the issue instead of inventing a different naming scheme
+
+When `plan.yaml` is written:
+
+1. Commit the updated planning bundle to the same branch immediately
+2. Include:
+   - `plan.yaml`
+   - any related planning artifact updates made as part of finalizing the execution-ready plan
+3. Use a clear planning commit message such as:
+   - `plan: add execution plan`
+
+Whenever the user requests further planning changes after either of the above milestones:
+
+1. Apply the requested planning changes
+2. Commit the updated planning artifacts to the same branch immediately
+3. Use a clear planning commit message such as:
+   - `plan: update planning artifacts`
+
+Do not leave approved or user-requested planning changes uncommitted.
 
 ## Overview Checkpoint
 
-After writing `overview.md`:
+After the research decision is resolved, and after any approved research is complete:
 
-1. Render its full contents directly in the assistant response.
-2. Summarize the key decisions or open questions briefly.
-3. Ask the user whether to adjust the overview or proceed.
-4. Stop there until the user responds.
+1. Create `.project_planning/YYYY-MM-DD_FEATURE_NAME/` if it does not already exist
+2. Write `overview.md` with:
+   - `## Request`
+   - `## Overview`
+   - `## Decision Log`
+3. Render the full contents of `overview.md` directly in the assistant response immediately after writing it
+4. Preserve headings, lists, and emphasis as normal user-facing formatting for the current medium
+5. Summarize the key decisions or open questions briefly
+6. Ask the user whether to adjust the overview or approve it
+7. Stop there until the user responds
 
-Do not create `plan.yaml` in the same turn unless the user explicitly asks to continue planning after seeing the overview text in the assistant response.
+If the user approves the overview:
+
+1. Create the feature branch if it does not already exist
+2. Commit the approved overview state immediately before continuing to detailed planning
 
 Do not satisfy this checkpoint by:
 
@@ -59,24 +253,22 @@ Do not satisfy this checkpoint by:
 - dumping raw markdown as plain text when the medium can render formatted output
 - wrapping the entire overview in a code fence unless the user asked for raw markdown
 
-## Research Rule
+## Detailed Planning
 
-Recommend research when the task is domain-specific, unfamiliar, or low-confidence. If research is chosen:
+Only after the user explicitly approves moving beyond the overview checkpoint:
 
-1. Keep the sub-agent prompt narrowly scoped.
-2. Give it only the minimum parent context needed.
-3. Restrict its writes to `.project_planning/YYYY-MM-DD_FEATURE_NAME/`.
-4. Prefer a smaller, cheaper, still-good model.
-5. Wait for the result, analyze it, then decide whether more research or clarification is needed.
+1. Write `plan.yaml`
+2. Make the plan detailed enough that executor steps can run without guessing
+3. Keep stage objectives high level
+4. Make each step specific enough for implementation without guessing
+5. Mark independent work that can run in parallel
+6. Use `depends_on` only when sequencing is real
+7. Include concrete files or code areas, constraints, outputs, acceptance criteria, handoff text, and verification for each step
+8. Commit the updated planning state immediately after writing `plan.yaml`
 
-## Chain Handoff
+If the user later requests changes to the overview, plan, or research-backed planning decisions, update the relevant planning artifacts and commit those changes immediately.
 
-- After planning is complete, hand off with an explicit clean-context instruction and the exact next command for the current runtime.
-- For Claude Code and OpenCode, say exactly: `Please run /clear then /coding-loop-executor .project_planning/FEATURE on an empty context.`
-- For Codex runtimes that use the same slash-command syntax, say exactly: `Please run /clear then $coding-loop-executor .project_planning/FEATURE on an empty context.`
-- If a runtime uses a different syntax, define one exact sentence for that runtime and use it verbatim.
-- Do not offer to continue into executor from the current context.
-- The next step of the chain is executor.
+Do not change the schema below.
 
 ## Plan Structure
 
@@ -102,21 +294,3 @@ stages:
         acceptance: []
         handoff: Short sub-agent handoff summary
         verification: []
-```
-
-Rules for the plan:
-
-- Keep stage objectives high level.
-- Make each step specific enough that it can be executed without guessing.
-- Explicitly mark independent work that can run in parallel.
-- Use `depends_on` only when sequencing is real.
-- Include concrete files or code areas, constraints, outputs, acceptance criteria, handoff text, and verification for each step.
-- Do not write implementation files from this skill. If the user wants execution, hand off to the normal coding workflow.
-
-## Interaction Policy
-
-- If the request is too vague to plan, ask for the minimum high-level description needed to disambiguate it.
-- Present the overview first in the assistant response as properly formatted user-facing content, not just on disk or via tool output, and hold back detailed implementation until the user wants it.
-- Keep the first response brief enough to allow discussion at the architecture level.
-- If the user asks for more detail, expand the staged plan incrementally.
-- Keep all writes confined to the planning directory, including sub-agents.
