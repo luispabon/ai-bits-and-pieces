@@ -1,6 +1,10 @@
+
+# coding-loop-executor
+
+```md
 ---
 name: coding-loop-executor
-description: Execute an approved coding plan in staged steps with tight scope control, early verification discovery, deferred automated verification by default, and mandatory isolated sub-agent dispatch when the runtime supports safe worktree execution. Use when planning is complete and the task should be implemented from the planner's artifacts.
+description: Execute an approved coding plan in staged steps with tight scope control, planner-defined verification strategy, deferred automated verification by default, and mandatory isolated sub-agent dispatch when the runtime supports safe worktree execution. Use when planning is complete and the task should be implemented from the planner's artifacts.
 ---
 
 # Coding Loop Executor
@@ -32,7 +36,7 @@ Follow this sequence strictly:
 1. Input validation
 2. Plan loading
 3. Branch setup
-4. Verification discovery
+4. Verification strategy loading
 5. Step scheduling
 6. Sub-agent implementation
 7. Automated verification and fix loop
@@ -47,7 +51,7 @@ These gates are mandatory:
 
 - Do not execute anything unless both `overview.md` and `plan.yaml` exist.
 - Do not modify code before checking out the execution branch.
-- Do not execute any step until the plan has been parsed, verification discovery has completed, and the step is ready.
+- Do not execute any step until the plan has been parsed, verification strategy has been loaded, and the step is ready.
 - Do not advance a dependent step until all of its dependencies are implemented and recorded.
 - Do not proceed to automated verification until all planned implementation steps are recorded as `implemented`, unless the plan explicitly requires an earlier verification checkpoint.
 - Do not proceed to reviewer handoff until:
@@ -65,7 +69,7 @@ The executor itself owns orchestration-only work and must not hand it to impleme
 - input validation
 - plan loading
 - branch checkout
-- verification discovery
+- verification strategy loading
 - dependency scheduling
 - `execution.md` updates
 - temporary branch provisioning
@@ -105,7 +109,7 @@ If `execution.md` already exists, treat it as prior executor state. Attempt to r
 Update `execution.md` throughout execution. At minimum, record:
 
 - active branch name
-- discovered verification commands and chosen verification strategy
+- loaded verification strategy and any later overrides
 - current stage and step status
 - step implementation completion
 - step final completion
@@ -136,7 +140,7 @@ Do not write executor-owned artifacts outside the planning folder, except for co
    - `acceptance`
    - `handoff`
    - `verification`
-3. Treat `overview.md` as the source of intent, scope, and guardrails.
+3. Treat `overview.md` as the source of intent, scope, guardrails, and verification strategy.
 4. Treat `plan.yaml` as the executable step graph.
 5. If the plan cannot be parsed reliably, stop and report the problem.
 
@@ -150,39 +154,34 @@ Do not write executor-owned artifacts outside the planning folder, except for co
 6. Create `execution.md` immediately after checking out the branch if it does not already exist.
 7. Record the active branch name and initial execution state in `execution.md` before changing code.
 
-## Verification Discovery
+## Verification Strategy Loading
 
-Before executing implementation steps, discover the verification commands and checks actually available in the repository.
+Use the `## Verification Strategy` section in `overview.md` as the default source of truth for verification.
 
-Use a shallow, evidence-driven discovery pass. Prefer this order:
+Before executing implementation steps:
 
-1. repo instructions and agent docs
-2. root task runners and project manifests
-3. CI configuration
-4. relevant subproject manifests for the code areas in scope
+1. Read the `## Verification Strategy` section from `overview.md`.
+2. Extract:
+   - commands
+   - cheap, medium, and expensive tiers
+   - execution-stage verification timing
+   - formatter fix-versus-check policy
+   - any required exceptions or repo-mandated boundaries
+3. Record the loaded strategy in `execution.md`.
 
-Identify, when available:
+Do not rediscover verification commands by default.
 
-- formatter commands
-- lint checks
-- type checks
-- unit tests
-- integration tests
-- end-to-end tests
-- build or compile validation
-- any repo-mandated verification commands
+Only perform limited rediscovery when:
 
-Classify discovered checks into:
+- the `## Verification Strategy` section is missing
+- referenced commands are clearly invalid
+- current repository reality materially contradicts the recorded strategy
 
-- cheap: suitable for frequent scoped use when needed
-- medium: suitable for broader subsystem validation
-- expensive: suitable for end-of-run validation unless earlier use is clearly necessary
+If rediscovery is required:
 
-Keep verification discovery shallow and evidence-driven. Prefer a few high-signal files over broad repo exploration. Do not recursively inspect unrelated directories just to find more checks. Stop once there is enough evidence to determine the likely validation surface for the affected area.
-
-If the plan's listed verification conflicts materially with the repo's actual available checks, stop and report the mismatch instead of inventing new verification.
-
-Record the discovered commands and chosen verification tiers in `execution.md`. Do not repeatedly rediscover them unless the executor encounters clear evidence that the initial discovery was wrong.
+- keep it shallow
+- prefer the same bounded discovery order used by the planner
+- record the reason and any updated commands in `execution.md`
 
 ## Verification Policy
 
@@ -192,7 +191,7 @@ Prefer, in order:
 
 1. repo-mandated checks for the affected area
 2. step-specific verification from `plan.yaml`
-3. repo-discovered cheap checks scoped to the changed files or subsystem
+3. planner-recorded cheap checks scoped to the changed files or subsystem
 4. broader medium or expensive checks when needed for confidence or required by repo policy
 
 By default, do not run automated verification after each implementation sub-agent completes.
@@ -203,6 +202,7 @@ Run step-level or stage-level verification earlier only when at least one of the
 
 - the plan explicitly requires verification at that step or stage
 - the repository has mandatory step-level checks for the affected area
+- the planner-recorded verification strategy explicitly requires it
 - the executor identifies a high-risk change where deferring all verification would be unsafe
 
 If a formatting tool supports safe automatic fixing, prefer the formatter's fix mode over a separate check mode for files in scope.
@@ -339,6 +339,7 @@ For each spawned implementation sub-agent:
    - the relevant files
    - the constraints
    - the expected outputs
+   - the verification strategy loaded from `overview.md`
    - any known coding standards, formatting rules, linting rules, test-running preferences, and repo instructions
 4. Tell the sub-agent to do its own local preflight check for any additional applicable repo preferences before implementing.
 5. If the sub-agent discovers a preference conflict, have it report back instead of guessing.
@@ -388,7 +389,7 @@ If work must be executed directly instead of via sub-agents, preserve the same s
 
 ## Automated Verification and Fix Loop
 
-After all planned implementation steps are implemented, run the discovered verification suite and record the results in `execution.md`.
+After all planned implementation steps are implemented, run the verification suite defined by the planner-recorded verification strategy and record the results in `execution.md`.
 
 Do not run automated verification after each implementation sub-agent by default.
 
@@ -515,7 +516,7 @@ During execution, report meaningful progress. Before each spawned sub-agent, tel
 At the end of execution, the output must include:
 
 - what changed
-- verification discovery results and chosen verification strategy
+- verification strategy loaded from `overview.md` and any overrides
 - verification performed
 - any verification-fix plans that were created and handed to sub-agents
 - manual verification rounds and the user's response, including any explicit OK to continue

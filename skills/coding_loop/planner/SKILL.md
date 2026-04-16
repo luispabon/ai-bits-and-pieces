@@ -19,9 +19,10 @@ Follow this sequence strictly:
 2. Clarification
 3. Research decision
 4. Optional research
-5. Overview checkpoint
-6. Detailed planning
-7. Handoff
+5. Verification strategy discovery
+6. Overview checkpoint
+7. Detailed planning
+8. Handoff
 
 Do not skip forward. Do not reorder these phases.
 
@@ -39,6 +40,7 @@ These gates are mandatory:
   - the request is sufficiently understood to produce a reliable overview
   - the research decision is resolved
   - any approved research is complete
+  - verification strategy discovery is complete
 - Do not write `plan.yaml` until:
   - `overview.md` exists
   - the user has explicitly approved moving beyond the overview checkpoint
@@ -144,7 +146,7 @@ If the user chooses research, or if the planner has told the user that research 
 If research is approved:
 
 1. Create `.project_planning/YYYY-MM-DD_FEATURE_NAME/`
-2. Spawn a sub-agent with the smallest possible prompt that ensures your questions are addressed in full
+2. Spawn a sub-agent with the smallest possible prompt
 3. Give it only the minimum parent context needed
 4. Restrict its writes to the same planning directory
 5. Prefer a smaller, cheaper, still-good model
@@ -176,11 +178,54 @@ Each research artifact should include:
 
 Keep research tightly scoped to the questions that matter for planning.
 
+## Verification Strategy Discovery
+
+Before writing `overview.md`, discover the repository verification strategy once and record it in the overview for the rest of the chain to consume.
+
+Keep this discovery shallow, evidence-driven, and token-conscious.
+
+Prefer this order:
+
+1. repo instructions and agent docs
+2. root task runners and project manifests
+3. CI configuration
+4. relevant subproject manifests for the code areas in scope
+
+Identify, when available:
+
+- formatter commands
+- static analysis
+- lint checks
+- type checks
+- unit tests
+- integration tests
+- end-to-end tests
+- build or compile validation
+- any repo-mandated verification commands
+
+Classify discovered checks into:
+
+- cheap
+- medium
+- expensive
+
+Also determine:
+
+- default verification timing during execution
+- whether automated verification should be deferred until end-of-implementation by default
+- any step-level or stage-level exceptions that repo policy clearly requires
+- formatter fix-versus-check policy
+- any assumptions or uncertainties
+
+Keep discovery bounded. Prefer a few high-signal files over broad repo exploration. Do not recursively inspect unrelated directories just to find more checks. Stop once there is enough evidence to determine the likely validation surface for the affected area.
+
+This verification strategy becomes the default source of truth for later chain stages. Executor, executor sub-agents, and reviewer should consume it from `overview.md` instead of rediscovering verification commands by default.
+
 ## Planning Artifacts
 
 Allowed planning artifacts:
 
-- `overview.md`: a single document with `## Request`, `## Overview`, and `## Decision Log` sections
+- `overview.md`: a single document with `## Request`, `## Overview`, `## Verification Strategy`, and `## Decision Log` sections
 - `plan.yaml`: the staged implementation plan
 - `research.md`, `research_001.md`, etc.: research artifacts from sub-agents
 
@@ -226,12 +271,13 @@ Do not leave approved or user-requested planning changes uncommitted.
 
 ## Overview Checkpoint
 
-After the research decision is resolved, and after any approved research is complete:
+After the research decision is resolved, after any approved research is complete, and after verification strategy discovery is complete:
 
 1. Create `.project_planning/YYYY-MM-DD_FEATURE_NAME/` if it does not already exist
 2. Write `overview.md` with:
    - `## Request`
    - `## Overview`
+   - `## Verification Strategy`
    - `## Decision Log`
 3. Render the full contents of `overview.md` directly in the assistant response immediately after writing it
 4. Preserve headings, lists, and emphasis as normal user-facing formatting for the current medium
