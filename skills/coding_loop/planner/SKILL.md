@@ -260,8 +260,8 @@ Only after the user explicitly approves moving beyond the overview checkpoint:
 1. Write `plan.yaml`
 2. Make the plan detailed enough that executor steps can run without guessing
 3. Keep stage objectives high level
-4. Make each step specific enough for implementation without guessing
-5. Mark independent work that can run in parallel
+4. Make each step specific enough for a cheaper implementation sub-agent to execute without guessing, while keeping each step large enough to justify separate execution
+5. Mark independent work that can run in parallel only when doing so is likely to produce net benefit after sub-agent context overhead, coordination cost, and merge risk
 6. Use `depends_on` only when sequencing is real
 7. Include concrete files or code areas, constraints, outputs, acceptance criteria, handoff text, and verification for each step
 8. Commit the updated planning state immediately after writing `plan.yaml`
@@ -269,6 +269,16 @@ Only after the user explicitly approves moving beyond the overview checkpoint:
 If the user later requests changes to the overview, plan, or research-backed planning decisions, update the relevant planning artifacts and commit those changes immediately.
 
 Do not change the schema below.
+
+## Step Sizing Rule
+
+Implementation is always carried out by sub-agents, so each plan step must be a worthwhile sub-agent work packet.
+
+Prefer the fewest steps that still allow reliable execution by a cheaper model. Do not decompose work below the point where sub-agent prompt/context overhead, coordination overhead, or merge risk would outweigh the benefit of splitting.
+
+Prefer broader, coherent steps - often a vertical slice or subsystem-sized change including directly related tests - over file-by-file or micro-task decomposition.
+
+Split work only when there is a real dependency boundary, meaningful parallelism, distinct subsystem context, or enough scope that a single cheaper sub-agent would be disadvantaged.
 
 ## Plan Structure
 
