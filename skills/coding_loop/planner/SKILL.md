@@ -26,6 +26,18 @@ Follow this sequence strictly:
 
 Do not skip forward. Do not reorder these phases.
 
+## Planning Artifacts
+
+Allowed planning artifacts:
+
+- `overview.md`: a single document with `## Request`, `## Overview`, `## Verification Strategy`, and `## Decision Log` sections
+- `plan.yaml`: the staged implementation plan
+- `research.md`, `research_001.md`, etc.: research artifacts from sub-agents
+
+Do not write any planning artifact outside `.project_planning/YYYY-MM-DD_FEATURE_NAME/`.
+
+Do not write implementation files from this skill.
+
 ## Artifact Gates
 
 These gates are mandatory:
@@ -178,7 +190,9 @@ Each research artifact should include:
 
 Keep research tightly scoped to the questions that matter for planning.
 
-## Verification Strategy Discovery
+## Verification Strategy 
+
+### Verification Strategy Discovery
 
 Before writing `overview.md`, discover the repository verification strategy once and record it in the overview for the rest of the chain to consume.
 
@@ -242,19 +256,7 @@ Keep discovery bounded. Prefer a few high-signal files over broad repo explorati
 
 This verification strategy becomes the default source of truth for later chain stages. Executor, executor sub-agents, and reviewer should consume it from `overview.md` instead of rediscovering verification commands by default.
 
-## Planning Artifacts
-
-Allowed planning artifacts:
-
-- `overview.md`: a single document with `## Request`, `## Overview`, `## Verification Strategy`, and `## Decision Log` sections
-- `plan.yaml`: the staged implementation plan
-- `research.md`, `research_001.md`, etc.: research artifacts from sub-agents
-
-Do not write any planning artifact outside `.project_planning/YYYY-MM-DD_FEATURE_NAME/`.
-
-Do not write implementation files from this skill.
-
-## Verification Strategy Format
+### Verification Strategy Format
 
 The `## Verification Strategy` section in `overview.md` must use this structured markdown format:
 
@@ -322,6 +324,7 @@ The `## Verification Strategy` section in `overview.md` must use this structured
 ### Uncertainties
 - <uncertainty 1>
 - <uncertainty 2>
+```
 
 ## Planning Branch
 
@@ -441,3 +444,33 @@ stages:
         handoff: Short sub-agent handoff summary
         verification: []
 ```
+
+## Handoff
+
+The next step of the chain is executor.
+
+After `plan.yaml` has been written, the planner must transition immediately into handoff mode. It must not reopen planning, execution, or review discussion on its own.
+
+If the user wants additional plan changes after `plan.yaml` exists, treat that as a return to planning, update the relevant planning artifacts, commit those changes, and then hand off again.
+
+When planning is complete:
+
+1. Confirm that planning is complete only if:
+   - `overview.md` exists
+   - `plan.yaml` exists
+   - the execution branch exists
+   - the latest planning artifacts are committed to that branch
+2. Instruct the user to clear context first
+3. Give the exact next command for the current runtime
+4. Stop there
+5. Do not offer to execute now
+6. Do not offer an additional review pass unless the user explicitly asks for further planning changes
+7. Do not add any wording that implies execution can continue from the current context
+
+Use the verbatim runtime-specific handoff sentence exactly as written below, with only the planning folder path substituted.
+
+- For Claude Code and OpenCode, say exactly: `Please run /clear then /coding-loop-executor .project_planning/FEATURE on an empty context.`
+- For Codex runtimes that use built-in slash commands and dollar-prefixed skill invocation, say exactly: `Please run /clear then $coding-loop-executor .project_planning/FEATURE on an empty context.`
+- If a runtime uses a different syntax, define one exact sentence for that runtime and use it verbatim.
+
+Do not say that you can continue directly from the current context.
