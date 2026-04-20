@@ -165,7 +165,8 @@ If research is approved:
 6. Require the sub-agent to browse the internet for relevant current information
 7. Wait for the result
 8. Review the result before writing `overview.md`
-9. Ask follow-up clarifying questions if the findings reveal unresolved decisions
+9. Explicitly close the research sub-agent once its output has been reviewed, or immediately if the research attempt is abandoned or fails
+10. Ask follow-up clarifying questions if the findings reveal unresolved decisions
 
 Research may refine the plan, dependencies, risks, and approach, but it must not silently change the user's requested scope.
 
@@ -174,6 +175,7 @@ If research suggests a materially different scope, architecture, or direction, s
 Research is considered complete only when a research artifact written by the research sub-agent exists in the planning directory.
 
 Do not write `overview.md` until the research sub-agent has completed and its output has been reviewed.
+Do not leave the research sub-agent open after its artifact has been reviewed.
 
 ## Research Output Contract
 

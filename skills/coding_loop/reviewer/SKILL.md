@@ -120,6 +120,7 @@ Update `review.md` throughout review. At minimum, record:
 - non-blocking notes
 - final pass, fail, or pass-with-notes status
 - finaliser handoff state
+- sub-agent closure status for each spawned review-fix sub-agent
 
 ## Review.md Structure
 
@@ -249,8 +250,9 @@ The reviewer is fully responsible for the isolated branch lifecycle:
 7. resolve merge conflicts if needed
 8. rerun the relevant checks
 9. update `review.md`
-10. delete the worktree
-11. delete the merged temporary branch
+10. explicitly close the sub-agent once its result is no longer needed
+11. delete the worktree
+12. delete the merged temporary branch
 
 Review-fix sub-agents must not:
 
@@ -298,6 +300,7 @@ A review-fix pass is not complete until:
 - the reviewer reviewed the returned work against the approved fix plan
 - the temporary branch was merged back into the feature branch
 - any merge conflicts were resolved
+- the sub-agent was explicitly closed
 - the worktree was deleted
 - the temporary branch was deleted
 - relevant verification was rerun

@@ -26,6 +26,7 @@ The chain is ordered as:
 - Every stage handoff must provide the exact next command in syntax that matches the current runtime.
 - Every stage handoff must include a verbatim example sentence for the current runtime and tell the agent to use that sentence exactly, with only the planning folder path substituted.
 - Do not offer to continue directly into the next skill from the current context.
+- Any sub-agent spawned during the chain must be explicitly closed after its result has been consumed or the work is abandoned. Do not leave completed or superseded agents open.
 
 ## Planner
 
@@ -49,6 +50,7 @@ The chain is ordered as:
 - Give each implementation step its own worktree and merge it back after the sub-agent finishes.
 - Before spawning any sub-agent, announce that handoff in the user-facing output.
 - In that announcement, state the model name being used and whether it is cheaper than the current runtime model.
+- After each implementation, verification-fix, or manual-fix sub-agent result has been reviewed and any needed follow-up has been recorded, explicitly close that sub-agent before continuing.
 - If verification finds issues, the executor must not fix them directly; it must create a fix plan and hand that fix plan to a sub-agent.
 - Before handoff to reviewer, the executor must ask the user to perform manual verification or explicitly OK the changes to continue.
 - When asking for manual verification, suggest concrete areas for the user to inspect.
@@ -73,6 +75,7 @@ The chain is ordered as:
 - Look for regressions, missing tests, or scope drift.
 - Report findings before suggesting cleanup.
 - If the user confirms fixes, generate a review-scoped fix plan, implement it sequentially, and commit each fix step separately.
+- After each review-fix sub-agent result has been reviewed and any needed follow-up has been recorded, explicitly close that sub-agent before continuing.
 - Write `review.md` with findings, fix-plan status, residual risk, and final pass or fail.
 - After the review passes, commit the `review.md` update with a descriptive review-status commit before handing off to finaliser.
 - When review is complete, output the verbatim handoff sentence for finaliser for the current runtime. Use it exactly, with only the planning folder path substituted.

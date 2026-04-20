@@ -118,6 +118,7 @@ Update `execution.md` throughout execution. At minimum, record:
 - sub-agents used, including step id and model
 - temporary branches and worktrees created and cleaned up
 - final executor handoff state
+- sub-agent closure status for each spawned sub-agent
 
 Do not write executor-owned artifacts outside the planning folder, except for code changes, git metadata, and isolated worktrees or branches used for execution.
 
@@ -303,8 +304,9 @@ The executor is fully responsible for the isolated branch lifecycle:
 7. resolve merge conflicts if needed
 8. run any required verification checkpoint for that point in the flow
 9. record the outcome in `execution.md`
-10. delete the worktree
-11. delete the merged temporary branch
+10. explicitly close the sub-agent once its result is no longer needed
+11. delete the worktree
+12. delete the merged temporary branch
 
 Sub-agents must not:
 
@@ -368,6 +370,7 @@ A sub-agent implementation step is not complete until:
 - the returned work has been reviewed against the step contract
 - the temporary branch has been merged back into the feature branch
 - any merge conflicts have been resolved
+- the sub-agent has been explicitly closed
 - the worktree has been deleted
 - the temporary branch has been deleted
 - the implementation outcome has been recorded in `execution.md`
@@ -383,9 +386,10 @@ After each isolated sub-agent step finishes:
    - obvious regressions
 2. Merge the temporary branch back into the execution branch.
 3. Resolve merge conflicts immediately if they occur.
-4. Delete the worktree immediately after a successful merge.
-5. Delete the merged temporary branch immediately after removing its worktree, using the safe merged-branch path.
-6. Commit any executor-authored follow-up changes on the execution branch before continuing. This includes:
+4. Explicitly close the sub-agent once the returned work has been reviewed and any needed follow-up has been recorded.
+5. Delete the worktree immediately after a successful merge.
+6. Delete the merged temporary branch immediately after removing its worktree, using the safe merged-branch path.
+7. Commit any executor-authored follow-up changes on the execution branch before continuing. This includes:
    - `execution.md` updates
    - conflict resolution
    - direct cleanup required outside the sub-agent branch
@@ -435,6 +439,7 @@ A verification-fix cycle is complete only when:
 - the executor reviewed the result
 - the executor merged the temporary fix branch back into the feature branch
 - the executor resolved any merge conflicts
+- the fix sub-agent has been explicitly closed
 - the executor deleted the worktree and temporary fix branch
 - the relevant verification has been rerun
 - the updated outcome has been recorded in `execution.md`
@@ -484,11 +489,12 @@ If the user reports issues:
 8. Review the result.
 9. Merge the temporary manual-fix branch back into the feature branch.
 10. Resolve merge conflicts if needed.
-11. Delete the worktree and temporary manual-fix branch.
-12. Rerun relevant verification.
-13. Update `execution.md`.
-14. Commit the new execution-branch state.
-15. Ask for manual verification or OK again.
+11. Explicitly close the manual-fix sub-agent once its result is no longer needed.
+12. Delete the worktree and temporary manual-fix branch.
+13. Rerun relevant verification.
+14. Update `execution.md`.
+15. Commit the new execution-branch state.
+16. Ask for manual verification or OK again.
 
 For each manual verification pass, group all user-reported issues into one fix plan and use one sub-agent to address that whole pass when the runtime supports it safely.
 
