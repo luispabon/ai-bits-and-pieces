@@ -235,6 +235,14 @@ Each step in the plan must contain exactly these fields:
 
 ### Plan document structure
 
+Write the plan to disk at:
+
+```
+.project_planning/refactoring-plan.md
+```
+
+Create the `.project_planning/` directory if it does not exist. Use the `create_file` tool. After writing, tell the user the file path and summarise the step count and severity breakdown in one sentence.
+
 The final output is a single markdown document:
 
 ```markdown
