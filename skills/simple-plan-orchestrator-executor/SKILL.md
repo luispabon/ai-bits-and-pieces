@@ -109,7 +109,11 @@ When done, run: <verification commands>
 Confirm they pass before finishing.
 
 Do not modify any files outside your working directory.
-Do not commit. The orchestrator will handle the merge.
+
+When your changes are complete and verification passes, commit everything with:
+  git add -A && git commit -m "stage <N>: <stage title>"
+
+Do not push. The orchestrator will handle the merge.
 ```
 
 ### 1.3 Dispatch the sub-agent
@@ -120,13 +124,22 @@ Monitor for completion. If the sub-agent errors or times out, note the state bef
 
 ### 1.4 Review the changes
 
-Once the sub-agent completes, inspect its work from the orchestrator context:
+Once the sub-agent completes, first verify it actually committed something:
 
 ```bash
 cd "${WORKTREE_PATH}"
 
-# See what changed
-git diff HEAD
+# Confirm at least one commit exists ahead of the base branch
+git log HEAD ^<BASE_BRANCH> --oneline
+```
+
+If that log is empty, the sub-agent made no commits. Do not proceed to merge. Treat this as a failed attempt: send the sub-agent back with an explicit reminder that it must commit before finishing (see correction template in 1.5). Do not touch the worktree yourself.
+
+Once commits are confirmed, inspect the work:
+
+```bash
+# See what changed across all commits in this worktree branch
+git diff <BASE_BRANCH>...HEAD
 
 # Run verification commands from the plan step
 <verification commands>
@@ -176,12 +189,18 @@ CURRENT_BRANCH=$(git branch --show-current)
 # Merge the worktree branch
 git merge --no-ff "${STAGE_SLUG}" -m "chore: stage <N> - <stage title>"
 
-# Remove the worktree
+# Verify the worktree is clean before removing it (all commits merged, no uncommitted state)
+git -C "${WORKTREE_PATH}" status --short
+# If the above shows any output, STOP - do not remove the worktree. Investigate before proceeding.
+
+# Only remove once confirmed clean
 git worktree remove "${WORKTREE_PATH}"
 
 # Delete the stage branch
 git branch -d "${STAGE_SLUG}"
 ```
+
+**NEVER use `git worktree remove --force` or `rm -rf` on a worktree directory.** If the worktree cannot be cleanly removed, stop and tell the user - there is uncommitted or unmerged work that must not be discarded.
 
 Log a one-line completion note: `[Stage N complete] <title>`
 
@@ -215,5 +234,6 @@ After all stages are merged:
 
 - Never commit directly on the main branch during orchestration. All work happens in worktree branches, merged only after review.
 - Never modify the plan document itself during execution unless the user explicitly asks you to update it with progress notes.
-- The sub-agent must not commit. Only the orchestrator commits (via merge).
+- Sub-agents are responsible for committing their own work inside the worktree. The orchestrator merges; it does not commit on the sub-agent's behalf.
+- Never force-delete a worktree. If cleanup fails, escalate to the user.
 - If the plan has a stage 0 or setup stage, execute it via worktree too - no special-casing.
