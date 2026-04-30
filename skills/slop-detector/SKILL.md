@@ -164,7 +164,7 @@ Process files one at a time. For each file:
 1. Read the entire file contents.
 2. Identify all functions, methods, classes, and meaningful code blocks. Use the file's language semantics - the model understands code structure natively.
 3. For each function/method/block, evaluate against all seven review criteria (see below).
-4. Record findings in the structure defined in `references/report-schema.yaml`.
+4. Record findings in the structure defined in the Finding Schema section below.
 5. Update `progress.yaml`: set `status: reviewed` and `findings_count`.
 6. Write updated `progress.yaml` after each file (not at the end) to support resume.
 
@@ -281,13 +281,170 @@ After all files are reviewed (or the triage+deep passes are complete), generate 
 
 ### 3.1 report.yaml
 
-Write all findings using the structure defined in `references/report-schema.yaml`. Read that file now for the exact schema.
-
 Each finding must be self-contained. An executor agent reading a single finding should have everything it needs to apply the change: the file, the method, the line range, the current code, the suggested replacement, and the rationale.
 
 Assign each finding a unique `id` in the format `F001`, `F002`, etc., sequential across the entire report.
 
-Order findings in the report grouped by file path, then by line number within each file. This gives the executor a natural top-to-bottom processing order per file.
+Order findings in the report grouped by file path, then by line number within each file. This gives the executor a natural top-to-bottom processing order per file. When applying changes, the executor should process findings within a file in **reverse line order** (bottom-up) to avoid line number shifts invalidating subsequent findings.
+
+#### Top-level structure
+
+```yaml
+meta:
+  run_id: string          # e.g. "2026-04-30-14-30-slop-detector"
+  base_path: string       # The directory that was crawled
+  mode: string            # "deep" or "triage"
+  started_at: string      # ISO 8601 timestamp
+  completed_at: string    # ISO 8601 timestamp
+  files_scanned: integer  # Total files reviewed (excludes skipped in triage)
+  files_with_findings: integer
+  total_findings: integer
+
+findings:
+  - <finding>             # Ordered list of findings (see below)
+```
+
+#### Finding schema
+
+```yaml
+id: string
+  # Format: "F001", "F002", etc. Sequential from F001.
+
+file: string
+  # Relative path from repo root. E.g. "src/services/auth.ts"
+
+language: string
+  # Lowercase language name. E.g. "typescript", "go", "python", "bash"
+
+method: string
+  # Function/method name under review.
+  # Top-level code outside any function: "<top-level>"
+  # File-level concerns (unused imports, etc.): "<file-level>"
+  # Constructors: use the constructor name ("__init__", "constructor")
+  # Anonymous functions: "<anonymous:lineN>"
+
+enclosing: string | null
+  # Class, struct, module, object, or namespace containing the method.
+  # null for free functions at module scope.
+  # For Go, use the receiver type name (e.g. "Server"), not the package name.
+
+line_range: [integer, integer]
+  # Start and end line numbers (1-indexed, inclusive) of the code under review.
+  # Refers to the source file as it exists on disk at scan time.
+
+category: string
+  # One of:
+  #   "complexity_reduction"
+  #   "extract_method"
+  #   "language_idioms"
+  #   "dead_code"
+  #   "naming"
+  #   "signature_hygiene"
+  #   "potential_bug"
+
+severity: string
+  # One of:
+  #   "high"   - actively harmful: causes bugs, hides errors, blocks maintainability
+  #   "medium" - should fix, not causing immediate harm but degrades quality
+  #   "low"    - polish: readability, consistency, convention alignment
+
+confidence: string
+  # One of:
+  #   "high"   - issue is clear and suggested fix is correct
+  #   "medium" - likely an issue, but context may justify current code
+
+description: string
+  # 2-5 sentences. Reference specific names, conditions, patterns.
+  # Explain WHY this is a problem, not just WHAT it is.
+
+current_code: string
+  # Exact lines from source, verbatim. Include enough context
+  # (e.g. function signature) for the snippet to make sense alone.
+
+suggested_code: string
+  # Proposed replacement, complete and ready to paste.
+  # Must be syntactically valid. Must preserve behaviour unless
+  # breaking_risk is medium or high.
+  # For deletions: the code with the dead lines removed.
+  # For extract-method: include BOTH the new function AND the modified call site.
+  # For catalogue-only findings (TODOs, known debt): set to "" and explain in description.
+
+rationale: string
+  # One sentence on why the change is better. Focus on concrete improvement.
+
+breaking_risk: string
+  # One of:
+  #   "low"    - purely structural, no behaviour change possible
+  #   "medium" - behaviour preserved in normal cases, edge cases may differ
+  #   "high"   - may alter observable behaviour, requires test verification
+
+related_findings: [string]
+  # IDs of findings that interact with this one (e.g. ["F003", "F007"]).
+  # Use when findings touch overlapping code or have ordering dependencies.
+  # Empty list if independent.
+```
+
+#### Example finding
+
+```yaml
+- id: "F012"
+  file: "src/services/auth.ts"
+  language: "typescript"
+  method: "validateToken"
+  enclosing: "AuthService"
+  line_range: [45, 92]
+  category: "complexity_reduction"
+  severity: "high"
+  confidence: "high"
+  description: >
+    Three levels of nested try/catch with identical error handling in each
+    branch. The outer conditional on tokenType is a strategy pattern
+    candidate - each branch does the same thing with a different validator.
+    The duplicated catch blocks mean error handling changes need to be made
+    in three places.
+  current_code: |
+    if (tokenType === 'jwt') {
+      try {
+        const decoded = this.jwtVerify(token);
+        return { valid: true, claims: decoded };
+      } catch (e) {
+        logger.error('Token validation failed', e);
+        return { valid: false, error: e.message };
+      }
+    } else if (tokenType === 'opaque') {
+      // ... same pattern repeated for opaque and api-key ...
+    }
+  suggested_code: |
+    const validators: Record<string, (token: string) => Promise<unknown>> = {
+      jwt: (t) => this.jwtVerify(t),
+      opaque: (t) => this.opaqueCheck(t),
+      'api-key': (t) => this.apiKeyLookup(t),
+    };
+    const validator = validators[tokenType];
+    if (!validator) {
+      return { valid: false, error: `Unsupported token type: ${tokenType}` };
+    }
+    try {
+      const claims = await validator(token);
+      return { valid: true, claims };
+    } catch (e) {
+      logger.error('Token validation failed', e);
+      return { valid: false, error: e.message };
+    }
+  rationale: >
+    Eliminates three duplicate catch blocks and two levels of nesting;
+    adding a new token type becomes a one-line map entry.
+  breaking_risk: "low"
+  related_findings: []
+```
+
+#### Executor agent notes
+
+- Each finding is self-contained. The `current_code` and `suggested_code` fields provide everything needed.
+- Check `related_findings` before applying. If two findings touch overlapping lines, apply together or in correct order.
+- Check `breaking_risk`. For `medium` or `high`, run the test suite after applying and before committing.
+- `line_range` refers to the original file. After applying a previous finding to the same file, line numbers may have shifted. Locate `current_code` by content matching, not line numbers alone.
+- `suggested_code` may need indentation adjustment to match surrounding context.
 
 ### 3.2 progress.yaml
 
@@ -334,15 +491,67 @@ Write `summary.md` using this template:
 
 [List the 10 files with the most findings, sorted by count descending. Include finding count and a one-line summary of the dominant issue type.]
 
-## Critical and High-Severity Findings
+## High-Severity Findings
 
 [List all high-severity findings here as a quick reference, with finding ID, file, method, category, and a one-sentence description. Potential bugs with high severity should appear first.]
 
+## Executor Instructions
+
+This section is the entry point for an executor agent. The companion file `report.yaml` in this directory contains every finding with full detail. Read this section in full before beginning work.
+
+### What report.yaml contains
+
+Each entry in `report.yaml` is a self-contained finding with these fields:
+
+- `id` - unique identifier (F001, F002, ...)
+- `file` - relative path to the source file
+- `language` - the file's language
+- `method` - the function/method the finding applies to
+- `enclosing` - the class/struct/module containing the method (null if free function)
+- `line_range` - [start, end] line numbers in the original file at scan time
+- `category` - one of: complexity_reduction, extract_method, language_idioms, dead_code, naming, signature_hygiene, potential_bug
+- `severity` - high, medium, or low
+- `confidence` - high or medium
+- `description` - what the problem is and why it matters
+- `current_code` - the exact source code that needs changing (verbatim from the file)
+- `suggested_code` - the proposed replacement, ready to paste. Empty string for catalogue-only findings (TODOs, known debt) that need no code change.
+- `rationale` - one sentence on why the change is better
+- `breaking_risk` - low (safe), medium (verify with tests), or high (may change behaviour)
+- `related_findings` - IDs of other findings that interact with this one
+
+### Processing order
+
+1. Process findings grouped by file. All findings for one file should be applied before moving to the next file.
+2. Within each file, apply findings in **reverse line order** (highest `line_range` first, working upward). This prevents earlier changes from shifting line numbers and invalidating later findings.
+3. Process high-severity findings before medium, and medium before low, when choosing which files to tackle first. The Top Offenders and High-Severity Findings sections above give a starting point.
+
+### How to apply each finding
+
+For each finding:
+
+1. Open the file at `file`.
+2. Locate the `current_code` block by **content matching**, not by `line_range`. Line numbers are a hint for initial orientation but may have drifted if previous findings in the same file have already been applied.
+3. If `suggested_code` is empty, the finding is informational (e.g. cataloguing a TODO). Skip it - no code change needed.
+4. Replace the matched `current_code` with `suggested_code`. Adjust indentation to match the surrounding context if needed.
+5. If `related_findings` is non-empty, read those findings before applying. They may touch overlapping lines or depend on each other. Apply related findings together or in the correct dependency order.
+
+### Verification and commits
+
+- After applying all findings in a single file, verify the project still builds/compiles. If the project has a build command (e.g. `go build ./...`, `tsc --noEmit`, `cargo check`), run it.
+- For findings with `breaking_risk: medium` or `breaking_risk: high`, run the project's test suite after applying and before committing. If tests fail, revert the change and skip the finding - do not attempt to fix tests to accommodate the change.
+- Commit after each file is complete (all findings applied and verified). Use a commit message in the format: `refactor(<scope>): apply slop-detector findings F001-F00N` where scope is the file or module name.
+- If a `current_code` block cannot be located in the file (the code has already been changed or moved), skip the finding and note it.
+
+### What NOT to do
+
+- Do not re-analyse the code or second-guess findings. The analysis is done. Your job is to apply the suggested changes mechanically.
+- Do not apply findings with empty `suggested_code` - these are informational only.
+- Do not modify code beyond what `suggested_code` specifies. If the surrounding code also looks improvable, that is a separate concern for a future audit.
+- Do not apply a finding if it would break the build or fail tests. Skip it and move on.
+
 ## Report Schema Reference
 
-The executor agent consuming `report.yaml` should reference this schema documentation.
-
-[Include the full schema reference from references/report-schema.yaml here, with field-by-field descriptions, enum values, and usage notes. This section must be comprehensive enough that an agent unfamiliar with the skill can parse and act on the report without ambiguity.]
+[Reproduce the full Finding Schema from the skill document here: all field names, types, enum values, and descriptions. This must be comprehensive enough that the executor agent can parse report.yaml without ambiguity.]
 
 ## Notes
 
