@@ -71,7 +71,7 @@ Name the branch and directory consistently: `stage-<zero-padded-N>-<slug>`, wher
 
 ### 1.2 Prepare the sub-agent context
 
-Compose a context package for the sub-agent. This must be self-contained - the sub-agent has no memory of prior conversation. Include:
+Compose a context package for the sub-agent. This must be self-contained - the sub-agent has no memory of prior conversation, and the information included must be complete enough that the sub-agent can carry out the work with as little improvisation on its part as possible. Include:
 
 **Mandatory context:**
 - The full text of the current stage from the plan (problem statement, action, affected files, verification criteria)
@@ -118,9 +118,9 @@ Do not push. The orchestrator will handle the merge.
 
 ### 1.3 Dispatch the sub-agent
 
-Spawn the sub-agent with the context package above. Choose a cheaper model to carry out the work, the smallest that's good enough for the specific task at hand.
+Model selection: you MUST choose the cheapest model available that's good enough to carry out the work in question. This is why all the thinking must have been done for the sub-agent before handing off its instruction package.
 
-The sub-agent works in its worktree, makes all changes, runs verification, then returns.
+Spawn the sub-agent with the context package above. The sub-agent works in its worktree, makes all changes, runs verification, then returns.
 
 Monitor for completion. If the sub-agent errors or times out, note the state before retrying.
 
