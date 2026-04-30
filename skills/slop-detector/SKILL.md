@@ -351,11 +351,16 @@ severity: string
 confidence: string
   # One of:
   #   "high"   - issue is clear and suggested fix is correct
-  #   "medium" - likely an issue, but context may justify current code
+  #   "medium" - likely an issue, but context may justify current code,
+  #              or the fix is one of several valid approaches.
+  #              medium confidence is NOT a reason to exclude a finding.
 
 description: string
   # 2-5 sentences. Reference specific names, conditions, patterns.
   # Explain WHY this is a problem, not just WHAT it is.
+  # When multiple valid fixes exist, describe the alternatives here.
+  # When the fix depends on a design decision, frame the question clearly:
+  # what the code does now and what the alternative behaviour would be.
 
 current_code: string
   # Exact lines from source, verbatim. Include enough context
@@ -367,6 +372,10 @@ suggested_code: string
   # breaking_risk is medium or high.
   # For deletions: the code with the dead lines removed.
   # For extract-method: include BOTH the new function AND the modified call site.
+  # When multiple valid approaches exist: pick the most likely one and note
+  # alternatives in the description field.
+  # When the fix depends on a design decision: provide the more
+  # defensive/explicit option and set confidence to medium.
   # For catalogue-only findings (TODOs, known debt): set to "" and explain in description.
 
 rationale: string
@@ -511,10 +520,10 @@ Each entry in `report.yaml` is a self-contained finding with these fields:
 - `line_range` - [start, end] line numbers in the original file at scan time
 - `category` - one of: complexity_reduction, extract_method, language_idioms, dead_code, naming, signature_hygiene, potential_bug
 - `severity` - high, medium, or low
-- `confidence` - high or medium
-- `description` - what the problem is and why it matters
+- `confidence` - high or medium. Medium-confidence findings are still worth applying but deserve extra scrutiny - read the description carefully as it may note alternative approaches or flag a design question.
+- `description` - what the problem is and why it matters. For medium-confidence findings, may describe alternative approaches or frame a design decision that needs human input.
 - `current_code` - the exact source code that needs changing (verbatim from the file)
-- `suggested_code` - the proposed replacement, ready to paste. Empty string for catalogue-only findings (TODOs, known debt) that need no code change.
+- `suggested_code` - the proposed replacement, ready to paste. Empty string for catalogue-only findings (TODOs, known debt) that need no code change. For design-decision findings, contains the more defensive/explicit option - read the description for context before applying.
 - `rationale` - one sentence on why the change is better
 - `breaking_risk` - low (safe), medium (verify with tests), or high (may change behaviour)
 - `related_findings` - IDs of other findings that interact with this one
@@ -548,6 +557,7 @@ For each finding:
 - Do not apply findings with empty `suggested_code` - these are informational only.
 - Do not modify code beyond what `suggested_code` specifies. If the surrounding code also looks improvable, that is a separate concern for a future audit.
 - Do not apply a finding if it would break the build or fail tests. Skip it and move on.
+- For findings where the description frames a design question (e.g. "this may be intentional best-effort behaviour"), do not resolve the question yourself. Apply the suggested code if `breaking_risk` is `low`, otherwise skip and leave the finding for human review.
 
 ## Report Schema Reference
 
@@ -562,13 +572,41 @@ For each finding:
 
 ## Important Guidelines
 
+### Inclusion posture: when in doubt, include
+
+Under-reporting is worse than over-reporting. A missed finding is invisible; a low-confidence finding is easily skipped by the executor. When uncertain whether something is worth reporting, include it with honest `confidence` and `breaking_risk` calibration and let the downstream consumer decide.
+
+### What counts as noise (and what does not)
+
+Noise means trivial formatting preferences, cosmetic naming nitpicks on names that are already acceptable, and purely subjective style choices where both alternatives are equally readable. If a method is clean, record zero findings - do not invent problems.
+
+The following are **never noise** regardless of confidence level:
+- Silent error swallowing, unchecked returns, or dropped failures - these are always findings, even if the current behaviour might be intentional. Report them with a description that frames the design question clearly.
+- Structural debt and extract-method candidates in large functions, even when multiple valid decompositions exist.
+- Architectural concerns like shared mutable global state, even if "only one instance exists in practice today."
+- Any pattern that would cause a bug if assumptions change (e.g. a function that works only because callers happen to pass non-nil values today).
+
+### Suggested code is a strong default, not a gate
+
+Every finding should include a `suggested_code` field where possible. However, the inability to produce a single unambiguous replacement must not prevent a finding from being reported. When multiple valid approaches exist, pick the most likely one, describe the alternatives in the `description` field, and set `confidence: medium`. When the fix depends on a product or API decision the auditor cannot resolve, describe both options in `description`, provide the suggested code for the more conservative option, and set `breaking_risk: medium` or `breaking_risk: high`. For catalogue-only findings (TODOs, known debt) that genuinely need no code change, set `suggested_code` to an empty string.
+
+### Findings that need a design decision
+
+Some findings surface a question rather than a clear defect - "should grep be best-effort or fail loudly on unreadable files?" These are valuable precisely because they expose undocumented behaviour contracts. Report them as findings (usually `potential_bug` or `complexity_reduction` category) with:
+- A description that frames the design question clearly, stating what the code does now and what the alternative behaviour would be.
+- `suggested_code` implementing the more defensive/explicit option (e.g. surfacing the error rather than swallowing it).
+- `confidence: medium` to signal that the current behaviour may be intentional.
+- `breaking_risk: medium` or `breaking_risk: high` as appropriate.
+
+The executor or the human reviewing the summary can decide whether to act. The slop detector's job is to surface these, not to resolve product questions.
+
+### Other guidelines
+
 - **Never modify source code.** This skill produces a report. It does not change any files in the target codebase. The executor agent handles implementation.
-- **Be concrete.** "Consider simplifying this" is not a finding. "Replace the nested if/else on lines 45-67 with a map lookup" is a finding. Every finding must include the specific code and specific suggested change.
-- **Include suggested code.** Every finding should include a `suggested_code` field with a ready-to-paste replacement. If the fix is a deletion, the suggested code is empty with a note. If the fix requires changes to other files (e.g. extracting a function that callers need to update), note this in `related_findings`.
+- **Be concrete.** "Consider simplifying this" is not a finding. "Replace the nested if/else on lines 45-67 with a map lookup" is a finding. Every finding must include the specific code and the specific issue, even if the suggested fix is one of several valid approaches.
 - **Respect existing conventions.** If the project consistently does something one way, flag it only if it is genuinely problematic. Do not impose textbook style on a codebase with its own coherent conventions. Note "this deviates from [standard] but is internally consistent - recommend aligning, user should confirm" when appropriate.
 - **Calibrate severity honestly.** `high` means "this is actively harmful - it will cause bugs, makes the code hard to maintain, or hides errors". `medium` means "this should be fixed but is not causing immediate harm". `low` means "polish - improves readability or consistency".
-- **Calibrate confidence honestly.** `high` means "this is clearly an issue and the suggested fix is clearly correct". `medium` means "this looks like an issue but there may be context I'm missing, or the suggested fix is one of several valid approaches".
-- **Do not flood the report with noise.** A finding should be worth the executor's time to apply. Ten high-quality findings are more useful than fifty marginal ones. If a method is clean, record zero findings for it - do not invent problems.
+- **Calibrate confidence honestly.** `high` means "this is clearly an issue and the suggested fix is clearly correct". `medium` means "this looks like an issue but there may be context I'm missing, or the suggested fix is one of several valid approaches". `medium` is not a reason to exclude a finding.
+- **Preserve behaviour in suggested code.** Every `suggested_code` should preserve the external behaviour of the code where possible. If a change would alter semantics, set `breaking_risk` accordingly and explain what changes in the description. This constraint applies to the suggested fix, not to whether the finding is reported.
 - **Cross-reference related findings.** If fixing finding F003 would conflict with or be affected by finding F007, link them via `related_findings`. The executor needs to know about ordering dependencies.
-- **Preserve behaviour.** Every suggested change must preserve the external behaviour of the code. If a simplification would change semantics (even edge cases), flag it with `breaking_risk: high` and explain what changes.
 - **Write progress.yaml after every file.** This is the resume mechanism. If the run is interrupted after reviewing 30 of 50 files, the next run picks up at file 31.
