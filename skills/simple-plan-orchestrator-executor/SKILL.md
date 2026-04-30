@@ -118,7 +118,9 @@ Do not push. The orchestrator will handle the merge.
 
 ### 1.3 Dispatch the sub-agent
 
-Spawn the sub-agent with the context package above. The sub-agent works in its worktree, makes all changes, runs verification, then returns.
+Spawn the sub-agent with the context package above. Choose a cheaper model to carry out the work, the smallest that's good enough for the specific task at hand.
+
+The sub-agent works in its worktree, makes all changes, runs verification, then returns.
 
 Monitor for completion. If the sub-agent errors or times out, note the state before retrying.
 
