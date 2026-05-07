@@ -1,6 +1,6 @@
 ---
 name: copy-polisher
-description: "Fix grammar and clarity in any text while making the absolute minimum number of changes and preserving as much original wording as possible. Use this skill whenever the user asks to clean up, fix, polish, tighten, or edit something they wrote - even casual phrasing like 'fix this', 'clean this up', 'grammar check this', 'polish this'. Applies to anything: emails, blog posts, comments, documentation, messages, notes, scripts, social media copy. Trigger even for short snippets - the skill applies at any length."
+description: "Fix grammar and clarity in any text while making the absolute minimum number of changes and preserving as much original wording as possible."
 ---
 
 # Copy Polisher
