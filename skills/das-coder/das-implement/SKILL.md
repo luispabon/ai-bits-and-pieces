@@ -1,6 +1,6 @@
 ---
 name: das-implement
-description: Execute an approved coding plan as serial-first implementation steps with tight scope control, planner-defined verification strategy, and mandatory sub-agent/worktree execution. Use when planning is complete and the task should be implemented from the planner's artifacts.
+description: Execute an approved coding plan as serial-first implementation steps with tight scope control, planner-defined verification strategy, and mandatory sub-agent/worktree execution.
 ---
 
 # Coding Loop Executor
@@ -123,7 +123,7 @@ The feature branch is owned by the executor. Sub-agents must not work directly o
 
 Every implementation or fix pass MUST run in a dedicated worktree attached to a temporary branch created from the current feature branch. This is mandatory, not a preference.
 
-Safe isolated execution requires the runtime to delegate to sub-agents, create git worktrees, create temporary branches, and the repository state to be clean enough to provision them safely. These conditions are met in any standard Claude Code session with a clean git state.
+Safe isolated execution requires the runtime to delegate to sub-agents, create git worktrees, create temporary branches, and the repository state to be clean enough to provision them safely. Any runtime with sub-agent dispatch and git access meets these conditions.
 
 The executor must:
 
@@ -139,7 +139,7 @@ The executor must:
 
 Sub-agents must not merge, rebase, clean up executor-owned git state, or commit directly to the feature branch.
 
-The direct fallback activates only when the Agent tool returns an error or `git worktree add` fails with a real error. A judgment that isolation is unnecessary or that the edits are simple does not qualify as a fallback condition. If direct execution is used as a fallback, record the concrete error in `execution.md` and preserve the same step boundaries.
+The direct fallback activates only when sub-agent dispatch returns an error or `git worktree add` fails with a real error. A judgment that isolation is unnecessary or that the edits are simple does not qualify as a fallback condition. If direct execution is used as a fallback, record the concrete error in `execution.md` and preserve the same step boundaries.
 
 ## Delegation
 

@@ -1,6 +1,6 @@
 ---
 name: das-review
-description: Review coding changes against the approved plan, identify concrete bugs, regressions, and plan-adherence gaps, run approved isolated fix passes, then close the loop with optional planning-doc cleanup and PR/MR creation. Use after execution is complete.
+description: Review coding changes against the approved plan, identify concrete bugs, regressions, and plan-adherence gaps, run approved isolated fix passes, then close the loop with optional planning-doc cleanup and PR/MR creation.
 ---
 
 # Coding Loop Reviewer And Closeout

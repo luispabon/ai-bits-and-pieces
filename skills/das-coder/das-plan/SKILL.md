@@ -1,6 +1,6 @@
 ---
 name: das-plan
-description: Plan coding work as a compact implementation-step bundle with a conservative research decision, high-level overview first, and planning artifacts written only under .project_planning/YYYY-MM-DD_FEATURE_NAME/. Use when invoked by name or when asked to plan a feature, refactor, migration, or other code change. If only the skill name is given, ask for a high-level description first before writing planning files.
+description: Plan coding work as a compact implementation-step bundle with a conservative research decision, high-level overview first, and planning artifacts written only under .project_planning/YYYY-MM-DD_FEATURE_NAME/. If only the skill name is given, ask for a high-level description first before writing planning files.
 ---
 
 # Coding Loop Planner
@@ -103,9 +103,9 @@ If research is approved, the planner MUST delegate it to a sub-agent. The planne
 
 Before starting any research activity, ask: have I dispatched a sub-agent for this? If no — stop, dispatch.
 
-Delegate to the cheapest capable research sub-agent or profile available in the current runtime. These conditions are met in any standard Claude Code session with the Agent tool available.
+Delegate to the cheapest capable research sub-agent or profile available in the current runtime. Any runtime with sub-agent dispatch meets this condition.
 
-The direct fallback activates only when the Agent tool returns an error. A judgment that the research is simple enough to do inline does not qualify as a fallback condition.
+The direct fallback activates only when sub-agent dispatch returns an error. A judgment that the research is simple enough to do inline does not qualify as a fallback condition.
 
 The research task must be tight and include:
 
@@ -192,7 +192,7 @@ Serial execution is the default. Parallel execution is exceptional and must be e
 
 ## Delegation Guidance
 
-Use the cheapest capable sub-agent or delegation profile available in the current runtime. In standard Claude Code sessions, the Agent tool is always available.
+Use the cheapest capable sub-agent or delegation profile available in the current runtime.
 
 Every delegated task must be self-contained and include relevant context already known by the main agent. Do not make delegated agents rediscover context unnecessarily.
 
