@@ -1,6 +1,6 @@
 ---
 name: coding-loop-finaliser
-description: Close out a completed coding loop by validating final chain readiness, checking for leftover repository state, and optionally preparing and creating a PR or MR when the remote provider is supported. Use after review confirms the work is ready to finish.
+description: Close out a completed coding loop by validating final chain readiness, checking for leftover repository state, and optionally preparing and creating a PR or MR when the remote provider is supported.
 ---
 
 # Coding Loop Finaliser

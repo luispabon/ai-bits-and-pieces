@@ -1,6 +1,6 @@
 ---
 name: coding-loop-executor
-description: Execute an approved coding plan in staged steps with tight scope control, planner-defined verification strategy, deferred automated verification by default, and mandatory isolated sub-agent dispatch when the runtime supports safe worktree execution. Use when planning is complete and the task should be implemented from the planner's artifacts.
+description: Execute an approved coding plan in staged steps with tight scope control, planner-defined verification strategy, deferred automated verification by default, and mandatory isolated sub-agent dispatch when the runtime supports safe worktree execution.
 ---
 
 # Coding Loop Executor

@@ -1,6 +1,6 @@
 ---
 name: coding-loop-reviewer
-description: Review coding changes against the approved plan, identify concrete bugs, regressions, and plan-adherence gaps, and, when approved, run a batched sequential review-fix loop using isolated sub-agents before finalization. Use after execution and before finalization.
+description: Review coding changes against the approved plan, identify concrete bugs, regressions, and plan-adherence gaps, and, when approved, run a batched sequential review-fix loop using isolated sub-agents before finalization.
 ---
 
 # Coding Loop Reviewer

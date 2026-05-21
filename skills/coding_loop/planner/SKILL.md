@@ -1,6 +1,6 @@
 ---
 name: coding-loop-planner
-description: Plan coding work in stages with a mandatory research-decision checkpoint, a high-level overview first, and planning artifacts written only under .project_planning/YYYY-MM-DD_FEATURE_NAME/. Use when invoked by name or when asked to plan a feature, refactor, migration, or other code change. If only the skill name is given, ask for a high-level description first before writing any planning files.
+description: Plan coding work in stages with a mandatory research-decision checkpoint, a high-level overview first, and planning artifacts written only under .project_planning/YYYY-MM-DD_FEATURE_NAME/. If only the skill name is given, ask for a high-level description first before writing any planning files.
 ---
 
 # Coding Loop Planner
@@ -192,7 +192,7 @@ Each research artifact should include:
 
 Keep research tightly scoped to the questions that matter for planning.
 
-## Verification Strategy 
+## Verification Strategy
 
 ### Verification Strategy Discovery
 
