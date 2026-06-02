@@ -42,7 +42,7 @@ Stop and report blockers instead of widening scope.
 - active branch
 - loaded verification strategy or explicit overrides
 - current, completed, blocked, and skipped steps
-- sub-agents used and their step ids
+- sub-agents used, including step id, model or delegation profile, and escalation reason if any
 - verification commands and results
 - deviations, blockers, and manual verification notes
 - final reviewer handoff status
@@ -76,6 +76,8 @@ Optional fields:
 - `depends_on`
 - `parallel_group`
 - `delegate_profile`
+
+If `delegate_profile` is present, treat it as the planner's explicit runtime-specific delegation preference for that step. Use it unless it is unavailable or unsafe for the step, and record any override in `execution.md`.
 
 Do not infer missing implementation plans from `overview.md` alone.
 
@@ -143,7 +145,20 @@ The direct fallback activates only when sub-agent dispatch returns an error or `
 
 ## Delegation
 
-Default to the cheapest/fastest tier available on the current runtime. Only escalate to a higher tier when the step involves complex multi-file reasoning or ambiguous design decisions — and record the reason▎ in execution.md.
+Default to the cheapest/fastest concrete model or delegation profile available on the current runtime. When the runtime supports explicit sub-agent model or profile selection, the executor MUST pass that selection in the spawn/delegation call instead of relying on inherited defaults.
+
+Do not omit the model or profile override merely because the chosen option is "the default" in prose. If the current runtime's sub-agents inherit the parent model by default, omitting the override is only allowed when the parent model is already the cheapest safe option or no cheaper safe option exists.
+
+Only escalate to a higher tier when the step involves complex multi-file reasoning or ambiguous design decisions. Record the escalation reason in `execution.md`.
+
+Before spawning any implementation or fix sub-agent, tell the user:
+
+- which step or fix pass is being handed off
+- which model or delegation profile will be used
+- whether that model or profile is cheaper than, the same tier as, or more capable than the current runtime model
+- whether a planner-provided `delegate_profile` is being used or overridden
+
+Record the same model or profile decision in `execution.md`.
 
 Every delegated task must be tight and self-contained. Include:
 
