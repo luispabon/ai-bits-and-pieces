@@ -143,7 +143,7 @@ The direct fallback activates only when sub-agent dispatch returns an error or `
 
 ## Delegation
 
-Use the cheapest capable sub-agent or delegation profile available in the current runtime.
+Default to the cheapest/fastest tier available on the current runtime. Only escalate to a higher tier when the step involves complex multi-file reasoning or ambiguous design decisions — and record the reason▎ in execution.md.
 
 Every delegated task must be tight and self-contained. Include:
 
