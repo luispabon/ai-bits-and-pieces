@@ -20,7 +20,7 @@ Follow this sequence:
 3. Research decision
 4. Optional research
 5. Verification strategy discovery
-6. Overview checkpoint
+6. Overview checkpoint ← user approval required
 7. Implementation-step planning
 8. Handoff
 
@@ -151,7 +151,17 @@ Executor and reviewer should consume this section instead of rediscovering verif
 
 Write `overview.md` only after clarification, research decision, any approved research, and verification discovery are complete.
 
-Present the overview to the user and wait for explicit approval before writing `plan.yaml`.
+After writing `overview.md`, display its full contents verbatim and stop. Tell the user:
+
+- what you understood the request to be
+- the high-level approach and key decisions
+- verification strategy
+- risks, open questions, or assumptions worth flagging
+- that you need their approval before writing `plan.yaml`
+
+Use the turn-ending mechanism available in the current runtime (e.g. `AskUserQuestion` in plan mode) to present the overview. End your turn after presenting. Do not continue to `plan.yaml` in the same turn.
+
+Do not write `plan.yaml` until the user explicitly approves the overview. A lack of objection is not approval. If the user provides feedback, update `overview.md` and present again.
 
 ## Plan Format
 
