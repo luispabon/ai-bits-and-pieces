@@ -17,12 +17,16 @@ Follow this sequence:
 
 1. Intake
 2. Clarification
-3. Research decision
-4. Optional research
-5. Verification strategy discovery
-6. Overview checkpoint ← user approval required
-7. Implementation-step planning
-8. Handoff
+3. Understanding checkpoint
+   ▸ GATE — user approval required before proceeding
+4. Research decision
+   ▸ GATE — user approval required before proceeding
+5. Optional research
+6. Verification strategy discovery
+7. Overview checkpoint
+   ▸ GATE — user approval required before proceeding
+8. Implementation-step planning
+9. Handoff
 
 Do not write planning artifacts before the research decision is resolved.
 
@@ -30,7 +34,7 @@ Do not write planning artifacts before the research decision is resolved.
 
 Allowed planning artifacts:
 
-- `overview.md`: contains `## Request`, `## Overview`, `## Verification Strategy`, and `## Decision Log`
+- `overview.md`: contains `## Request`, `## Overview`, `## Key Decisions`, `## Tradeoffs`, `## Scope Boundaries`, `## Verification Strategy`, and `## Decision Log`
 - `plan.yaml`: a flat implementation-step plan
 - `research.md`, `research_001.md`, etc.: research artifacts, only when research runs
 
@@ -38,7 +42,9 @@ Do not write artifacts outside `.project_planning/YYYY-MM-DD_FEATURE_NAME/`.
 
 The planner owns the loop feature branch. Before writing the first planning artifact, create or check out `cl/YYYY-MM-DD_FEATURE_NAME`. Use that same branch for planning, implementation, review, and closeout.
 
-Planning is execution-ready only when `overview.md` and `plan.yaml` exist on `cl/YYYY-MM-DD_FEATURE_NAME` and the latest planning artifacts have been committed.
+Before writing the first planning artifact, check whether `.project_planning/` is gitignored by running `git check-ignore -q .project_planning/`. If exit code is 0, planning artifacts are local-only — do not stage or commit them at any point during this workflow. If exit code is non-zero, planning artifacts are version-controlled — commit them as described below.
+
+Planning is execution-ready only when `overview.md` and `plan.yaml` exist under `.project_planning/YYYY-MM-DD_FEATURE_NAME/` on `cl/YYYY-MM-DD_FEATURE_NAME`, and the planner has delivered the handoff sentence. When planning artifacts are version-controlled, the latest planning artifacts must also be committed.
 
 ## Intake And Clarification
 
@@ -58,7 +64,7 @@ Do not ask implementation-detail questions before the overview checkpoint unless
 
 Use the lightest clarification style that is safe for the task.
 
-For straightforward, repo-local work, ask only the questions needed to avoid a misleading overview.
+For straightforward, repo-local work, ask targeted clarification questions when genuine uncertainty exists. Do not fabricate questions to satisfy a quota.
 
 For ambiguous, domain-heavy, architectural, hard-to-reverse, terminology-sensitive, high-risk, or tradeoff-heavy work, switch to grill mode:
 
@@ -69,6 +75,21 @@ For ambiguous, domain-heavy, architectural, hard-to-reverse, terminology-sensiti
 - test important assumptions with concrete scenarios
 - call out contradictions between the user's description and discovered code
 - stop grilling once the planner can state the goal, success criteria, scope boundaries, constraints, risks, and key tradeoffs clearly
+
+### Understanding checkpoint
+
+▸ GATE — user approval required before proceeding to the research decision.
+
+After clarification, present a brief understanding summary to the user covering:
+
+- **Goal**: what the task achieves
+- **Assumptions**: anything taken as given that the user did not explicitly state
+- **Scope**: what is in and what is out
+- **Unknowns**: open questions or areas of uncertainty
+
+If any assumptions or unknowns warrant clarification, ask targeted questions about them. Do not ask generic questions like "does this look right?" — ask about the substance. Do not fabricate questions when none are warranted; the summary itself gives the user enough to correct misalignment.
+
+Do **not** proceed to the research decision until the user explicitly confirms the understanding is correct. No implicit assent.
 
 ## Research Decision
 
@@ -119,6 +140,13 @@ The delegated researcher is read-only. Research is complete when the delegated r
 
 If a persisted research artifact is useful, the planner writes `research.md` or `research_001.md` from the delegated result. Do not require the researcher to write files.
 
+After writing a research artifact, communicate findings to the user:
+
+1. Present an inline summary (3-5 bullets) covering key findings, implications, and any surprises or risks discovered.
+2. Display the full research artifact contents to the user for detailed review.
+
+The inline summary drives the conversation forward; the displayed artifact is the detailed reference. Do not skip either step.
+
 ## Research Output Contract
 
 Research artifacts should use these sections:
@@ -149,19 +177,29 @@ Executor and reviewer should consume this section instead of rediscovering verif
 
 ## Overview Checkpoint
 
-Write `overview.md` only after clarification, research decision, any approved research, and verification discovery are complete.
+**STOP — approval required.** Write `overview.md` only after clarification, research decision, any approved research, and verification discovery are complete.
 
-After writing `overview.md`, display its full contents verbatim and stop. Tell the user:
+The overview must include:
 
-- what you understood the request to be
-- the high-level approach and key decisions
-- verification strategy
-- risks, open questions, or assumptions worth flagging
-- that you need their approval before writing `plan.yaml`
+- `## Key Decisions`: decisions made or assumed during clarification and research, with brief rationale for each
+- `## Tradeoffs`: alternatives considered and why they were rejected or deferred
+- `## Scope Boundaries`: what is explicitly in scope and what is out, so the user can catch misalignment early
+
+These sections give the user concrete material to react to, not just a summary of intent.
+
+After writing `overview.md`, display its full contents verbatim to the user.
+
+After showing the overview, drive a targeted discussion:
+
+1. Identify any open decisions or tradeoffs that need user input and ask specific questions about them.
+2. If there are no open decisions, highlight the most consequential choices made and invite feedback.
+3. Do not ask generic questions like "does this look good?" — ask about the substance.
 
 Use the turn-ending mechanism available in the current runtime (e.g. `AskUserQuestion` in plan mode) to present the overview. End your turn after presenting. Do not continue to `plan.yaml` in the same turn.
 
-Do not write `plan.yaml` until the user explicitly approves the overview. A lack of objection is not approval. If the user provides feedback, update `overview.md` and present again.
+Remain in the checkpoint phase until all open items are resolved AND the user gives explicit approval ("approve," "looks good," "go ahead," or equivalent). Do **not** write `plan.yaml` until then. No implicit assent, no exceptions.
+
+If the user asks questions, proposes changes, or gives partial feedback, continue the discussion. Do not proceed to `plan.yaml` until you receive explicit approval.
 
 ## Plan Format
 
@@ -208,7 +246,7 @@ Every delegated task must be self-contained and include relevant context already
 
 ## Handoff
 
-Commit the final planning artifacts on `cl/YYYY-MM-DD_FEATURE_NAME`.
+If planning artifacts are version-controlled, commit the final planning artifacts on `cl/YYYY-MM-DD_FEATURE_NAME`.
 
 Use the verbatim runtime-specific handoff sentence exactly as written below, with only the planning folder path substituted.
 
