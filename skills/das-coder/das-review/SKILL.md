@@ -103,14 +103,26 @@ Safe isolated execution is available only when the runtime can delegate to sub-a
 
 When safe isolated execution is available, run the approved fix pass in a dedicated temporary branch and worktree. The reviewer owns provisioning, merge, verification, cleanup, and any `review.md` updates.
 
+### Worktree Provisioning Checks
+
+After `git worktree add`, verify the worktree before dispatching:
+
+1. `ls -d <worktree-path>` — confirm the directory was created.
+2. `git -C <worktree-path> branch --show-current` — confirm it is on the expected temporary branch.
+
+If either check fails, prune the entry with `git worktree remove <worktree-path>` and activate the direct fallback.
+
+### Review-Fix Delegation
+
 The review-fix sub-agent must:
 
 - receive only the approved findings, fix plan, relevant files, constraints, and verification strategy
+- run the pre-commit checklist before committing (see below)
 - commit its changes on the temporary branch
 - avoid unrelated cleanup or scope expansion
 - not merge, rebase, or clean up reviewer-owned git state
 
-If safe isolated execution is unavailable, direct fixes are allowed only as a fallback. Record the reason if `review.md` exists, and keep the same approved fix-pass boundary.
+If safe isolated execution is unavailable or worktree provisioning checks fail, direct fixes are allowed only as a fallback. Record the reason if `review.md` exists, and keep the same approved fix-pass boundary.
 
 Review-fix work is sequential. Do not parallelize it.
 
@@ -118,9 +130,21 @@ Review-fix work is sequential. Do not parallelize it.
 
 Use the cheapest capable sub-agent or delegation profile available in the current runtime.
 
-The reviewer must provide a tight, self-contained task with known context, relevant files, approved decisions, constraints, expected output, and non-goals.
+The reviewer must provide a tight, self-contained task with known context, relevant files, approved decisions, constraints, expected output, non-goals, and the pre-commit checklist below.
+
+### Pre-Commit Checklist
+
+Include this checklist verbatim in every delegated task that commits. The sub-agent must run all checks before `git commit`:
+
+1. `git branch --show-current` — must equal the temporary branch name given in the task. If it shows the feature branch, STOP and report without committing.
+2. `git rev-parse --show-toplevel` — must equal the worktree path given in the task. If it shows a different path, STOP and report without committing.
+3. `git status` — must show only files within the declared scope as modified. If unexpected files appear, STOP and report.
+
+If any check fails, the sub-agent must not commit. It must report the mismatch and let the reviewer recover.
 
 ## Verification After Fixes
+
+Before running linters, clean any linter cache that stores results by absolute path. Stale entries from deleted worktrees cause false positives (e.g. `golangci-lint cache clean` for Go projects).
 
 Reuse the verification strategy in `overview.md` by default. Rerun the narrowest checks that cover the fixes and any affected acceptance criteria.
 

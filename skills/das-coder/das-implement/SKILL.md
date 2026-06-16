@@ -131,18 +131,28 @@ Safe isolated execution requires the runtime to delegate to sub-agents, create g
 The executor must:
 
 1. create the temporary branch and worktree
-2. delegate the scoped task inside that worktree
-3. require the sub-agent to commit on the temporary branch
-4. review the result against the step contract
-5. merge it back to the feature branch
-6. run required verification for that point in the flow
-7. update `execution.md`
-8. close the sub-agent
-9. delete the worktree and merged temporary branch
+2. verify the worktree is accessible (see provisioning checks below)
+3. delegate the scoped task inside that worktree
+4. require the sub-agent to commit on the temporary branch
+5. review the result against the step contract
+6. merge it back to the feature branch
+7. run required verification for that point in the flow
+8. update `execution.md`
+9. close the sub-agent
+10. delete the worktree and merged temporary branch
+
+### Worktree Provisioning Checks
+
+After `git worktree add`, verify the worktree before dispatching:
+
+1. `ls -d <worktree-path>` — confirm the directory was created.
+2. `git -C <worktree-path> branch --show-current` — confirm it is on the expected temporary branch.
+
+If either check fails, prune the entry with `git worktree remove <worktree-path>` and activate the direct fallback.
 
 Sub-agents must not merge, rebase, clean up executor-owned git state, or commit directly to the feature branch.
 
-The direct fallback activates only when sub-agent dispatch returns an error or `git worktree add` fails with a real error. A judgment that isolation is unnecessary or that the edits are simple does not qualify as a fallback condition. If direct execution is used as a fallback, record the concrete error in `execution.md` and preserve the same step boundaries.
+The direct fallback activates only when sub-agent dispatch returns an error, `git worktree add` fails with a real error, or worktree provisioning checks fail. A judgment that isolation is unnecessary or that the edits are simple does not qualify as a fallback condition. If direct execution is used as a fallback, record the concrete error in `execution.md` and preserve the same step boundaries.
 
 ## Delegation
 
@@ -169,10 +179,23 @@ Every delegated task must be tight and self-contained. Include:
 - constraints, non-goals, and forbidden changes
 - expected output and commit expectations
 - verification to run or report
+- the pre-commit checklist below
 
 Do not pass broad conversation history or vague prompts. Do not make the delegated agent rediscover context the main agent already has.
 
+### Pre-Commit Checklist
+
+Include this checklist verbatim in every delegated task that commits. The sub-agent must run all checks before `git commit`:
+
+1. `git branch --show-current` — must equal the temporary branch name given in the task. If it shows the feature branch, STOP and report without committing.
+2. `git rev-parse --show-toplevel` — must equal the worktree path given in the task. If it shows a different path, STOP and report without committing.
+3. `git status` — must show only files within the declared scope as modified. If unexpected files appear, STOP and report.
+
+If any check fails, the sub-agent must not commit. It must report the mismatch and let the executor recover.
+
 ## Verification Policy
+
+Before running linters, clean any linter cache that stores results by absolute path. Stale entries from deleted worktrees cause false positives (e.g. `golangci-lint cache clean` for Go projects).
 
 Use the narrowest meaningful verification that gives sufficient confidence.
 
