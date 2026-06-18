@@ -29,7 +29,7 @@ Follow this sequence:
 2. Check out the expected feature branch.
 3. Load verification strategy from `overview.md`.
 4. Create or resume compact `execution.md`.
-5. Execute ready implementation steps — dispatch one sub-agent per step via worktree. Do not implement directly.
+5. Execute ready implementation steps — dispatch one sub-agent per step via the delegation model. Do not implement directly unless the step is marked `no_delegate`.
 6. Run planned verification and fix failures.
 7. Ask for manual verification only when the plan or risk requires it.
 8. If planning artifacts are version-controlled, commit final executor state. Hand off to review.
@@ -77,8 +77,11 @@ Optional fields:
 - `depends_on`
 - `parallel_group`
 - `delegate_profile`
+- `no_delegate`
 
 If `delegate_profile` is present, treat it as the planner's explicit runtime-specific delegation preference for that step. Use it unless it is unavailable or unsafe for the step, and record any override in `execution.md`.
+
+If `no_delegate` is set, the executor applies the step's changes inline without delegation. This is the only case where inline execution is permitted.
 
 Do not infer missing implementation plans from `overview.md` alone.
 
@@ -120,18 +123,32 @@ The executor MUST NOT call file-mutation tools (Edit, Write, or Bash for file ch
 
 Before any implementation action, ask: have I dispatched a sub-agent for this step? If no — stop, provision the worktree, delegate.
 
-## Isolated Worktree Model
+## Delegation Model
 
-The feature branch is owned by the executor. Sub-agents must not work directly on it.
+The feature branch is owned by the executor. All implementation work MUST be performed by delegated sub-agents — the executor must not call file-mutation tools directly. The executor prefers the highest available delegation tier:
 
-Every implementation or fix pass MUST run in a dedicated worktree attached to a temporary branch created from the current feature branch. This is mandatory, not a preference.
+1. **Isolated delegation** (preferred): sub-agent works in a dedicated worktree on a temporary branch. Provides full isolation from the feature branch.
+2. **Direct delegation** (fallback): sub-agent works directly on the feature branch. Used when worktrees are unavailable or provisioning fails.
 
-Safe isolated execution requires the runtime to delegate to sub-agents, create git worktrees, create temporary branches, and the repository state to be clean enough to provision them safely. Any runtime with sub-agent dispatch and git access meets these conditions.
+There is no inline execution tier. If delegation itself is unavailable, stop and report a blocker.
 
-The executor must:
+Prefer isolated delegation. Fall back to direct delegation only when `git worktree add` fails, worktree provisioning checks fail, or sub-agent dispatch returns an error for the worktree path. A judgment that isolation is unnecessary or that the edits are simple does not justify skipping to direct delegation — only concrete errors do.
+
+### Worktree Provisioning Checks
+
+After `git worktree add`, verify the worktree before dispatching:
+
+1. `ls -d <worktree-path>` — confirm the directory was created.
+2. `git -C <worktree-path> branch --show-current` — confirm it is on the expected temporary branch.
+
+If either check fails, prune the entry with `git worktree remove <worktree-path>` and fall back to direct delegation.
+
+### Isolated Delegation Steps
+
+When using isolated delegation, the executor must:
 
 1. create the temporary branch and worktree
-2. verify the worktree is accessible (see provisioning checks below)
+2. verify the worktree is accessible (see provisioning checks above)
 3. delegate the scoped task inside that worktree
 4. require the sub-agent to commit on the temporary branch
 5. review the result against the step contract
@@ -141,18 +158,20 @@ The executor must:
 9. close the sub-agent
 10. delete the worktree and merged temporary branch
 
-### Worktree Provisioning Checks
-
-After `git worktree add`, verify the worktree before dispatching:
-
-1. `ls -d <worktree-path>` — confirm the directory was created.
-2. `git -C <worktree-path> branch --show-current` — confirm it is on the expected temporary branch.
-
-If either check fails, prune the entry with `git worktree remove <worktree-path>` and activate the direct fallback.
-
 Sub-agents must not merge, rebase, clean up executor-owned git state, or commit directly to the feature branch.
 
-The direct fallback activates only when sub-agent dispatch returns an error, `git worktree add` fails with a real error, or worktree provisioning checks fail. A judgment that isolation is unnecessary or that the edits are simple does not qualify as a fallback condition. If direct execution is used as a fallback, record the concrete error in `execution.md` and preserve the same step boundaries.
+### Direct Delegation Steps
+
+When using direct delegation, the executor must:
+
+1. delegate the scoped task on the feature branch
+2. require the sub-agent to commit on the feature branch
+3. review the result against the step contract
+4. run required verification for that point in the flow
+5. update `execution.md`
+6. close the sub-agent
+
+Record the concrete error that triggered the fallback in `execution.md`.
 
 ## Delegation
 
@@ -185,11 +204,18 @@ Do not pass broad conversation history or vague prompts. Do not make the delegat
 
 ### Pre-Commit Checklist
 
-Include this checklist verbatim in every delegated task that commits. The sub-agent must run all checks before `git commit`:
+Include the appropriate checklist verbatim in every delegated task that commits. The sub-agent must run all checks before `git commit`.
+
+**Isolated delegation mode:**
 
 1. `git branch --show-current` — must equal the temporary branch name given in the task. If it shows the feature branch, STOP and report without committing.
 2. `git rev-parse --show-toplevel` — must equal the worktree path given in the task. If it shows a different path, STOP and report without committing.
 3. `git status` — must show only files within the declared scope as modified. If unexpected files appear, STOP and report.
+
+**Direct delegation mode:**
+
+1. `git branch --show-current` — must equal the feature branch name given in the task. If it shows a different branch, STOP and report without committing.
+2. `git status` — must show only files within the declared scope as modified. If unexpected files appear, STOP and report.
 
 If any check fails, the sub-agent must not commit. It must report the mismatch and let the executor recover.
 

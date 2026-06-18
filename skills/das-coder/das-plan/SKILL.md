@@ -233,8 +233,17 @@ Optional fields:
 - `depends_on`: only when a real dependency exists
 - `parallel_group`: only when parallel execution is safe and worth the coordination cost
 - `delegate_profile`: optional runtime-specific delegation profile name
+- `no_delegate`: skip delegation for steps too small to justify the overhead
 
-Keep steps large enough to be worth delegating. Avoid atomizing work into tiny mechanical steps.
+### Step Sizing
+
+Group steps by logical deliverable, not by mechanical operation. Adding struct fields, updating the parser, and adding tests for the parser is one step when they serve the same feature unit. Split at package boundaries, domain concepts, or risk profiles.
+
+**Minimum size:** if both the what and the how fit in under three sentences, the step is too small — merge it into an adjacent step. Implementation work should meaningfully exceed the fixed overhead of delegation: task framing, pre-commit checklist, commit, and merge-back.
+
+**Maximum size:** one logical deliverable that a small model can hold in context and execute without judgment calls. A type with its builder and tests, a handler with its route registration, a config field with its validation and docs.
+
+Mark residual small steps that cannot merge elsewhere with `no_delegate: true`. The executor applies these inline instead of delegating.
 
 Serial execution is the default. Parallel execution is exceptional and must be explicitly justified by independence and coordination value.
 
