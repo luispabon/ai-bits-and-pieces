@@ -67,13 +67,15 @@ Compare these inputs:
 
 Focus on:
 
-- plan and scope adherence
+- plan and scope adherence — including whether each step's implementation honors its `approach` and the Key Decisions cited in its `decisions` list
 - obvious bugs or regressions
 - missing or weak verification
 - correctness against accepted intent
 - maintainability issues that materially affect correctness or future work
 
 Review touched files and directly adjacent regression-risk areas: call sites, interfaces, tests, config, data paths, and package boundaries touched by or directly depending on the change. Do not broadly re-review unrelated code.
+
+For inspection, use native tools directly — `Read` to examine files, `grep` and `glob` to locate code and call sites, `Write` for `review.md`. Do not route through `Bash` when a dedicated tool exists.
 
 Prefer evidence over speculation. Findings should reference concrete code, artifacts, missing checks, or reproducible reasoning.
 

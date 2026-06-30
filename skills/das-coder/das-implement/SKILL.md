@@ -67,10 +67,14 @@ Expected step fields:
 - `id`
 - `title`
 - `scope`
+- `decisions`
+- `approach`
 - `files`
 - `constraints`
 - `acceptance`
 - `verification`
+
+`approach` is authoritative for *how* a step is built: delegated sub-agents follow it rather than re-deriving design (names, signatures, locations, data shapes, edge/error handling). A step's `decisions` list cites Key Decision IDs in `overview.md`; resolve them there and treat them as binding constraints on the implementation. When constructing a delegated task, pass the step's `approach` and the resolved text of its cited `decisions` into the sub-agent's context.
 
 Optional fields:
 
@@ -106,31 +110,33 @@ Use `implemented` to unlock dependencies. Use `complete` only after required ver
 
 ## Executor-Owned Work
 
-The executor acts only as an orchestrator. The following are the only direct actions it takes — everything else is delegated:
+The executor acts only as an orchestrator. It performs these actions directly using the native tool for each — do not route through `Bash` when a dedicated tool exists:
 
-- artifact loading
-- branch checkout
-- step scheduling
-- `execution.md` updates
-- temporary branch and worktree provisioning
-- sub-agent dispatch
-- merge/conflict handling
-- temporary branch and worktree cleanup
-- verification orchestration
+- artifact loading — `Read` to load plan files; `grep` and `glob` to locate files
+- `execution.md` creation and updates — `Write`
+- branch checkout, worktree provisioning, merge/conflict handling, cleanup — `Bash` for git operations
+- step scheduling and sub-agent dispatch
+- verification orchestration — `Bash` for running checks; `Read` to inspect results
 - reviewer handoff
 
-The executor MUST NOT call file-mutation tools (Edit, Write, or Bash for file changes) on implementation code. All implementation edits, verification-failure fixes, and manual-verification issue fixes MUST be performed by delegated coding sub-agents. Doing so directly is a skill violation, not a fallback.
+Everything else is delegated.
+
+### Implementation code restriction
+
+The executor MUST NOT call file-mutation tools (`Edit`, `Write`, or `Bash` for file writes) on **implementation-scoped files** — the files listed in step `files` fields. All implementation edits, verification-failure fixes, and manual-verification issue fixes MUST be performed by delegated coding sub-agents. Doing so directly is a skill violation, not a fallback.
+
+This restriction does not apply to executor-owned artifacts (`execution.md`, worktree provisioning, branch operations).
 
 Before any implementation action, ask: have I dispatched a sub-agent for this step? If no — stop, provision the worktree, delegate.
 
-## Delegation Model
+## Delegation
 
-The feature branch is owned by the executor. All implementation work MUST be performed by delegated sub-agents — the executor must not call file-mutation tools directly. The executor prefers the highest available delegation tier:
+The feature branch is owned by the executor. Implementation-scoped code must be changed only by delegated sub-agents (see Implementation code restriction above). The executor prefers the highest available delegation tier:
 
 1. **Isolated delegation** (preferred): sub-agent works in a dedicated worktree on a temporary branch. Provides full isolation from the feature branch.
 2. **Direct delegation** (fallback): sub-agent works directly on the feature branch. Used when worktrees are unavailable or provisioning fails.
 
-There is no inline execution tier. If delegation itself is unavailable, stop and report a blocker.
+There is no inline execution tier. If delegation itself is unavailable, stop and report a blocker. Exception: steps marked `no_delegate` in the plan are applied inline by the executor.
 
 Prefer isolated delegation. Fall back to direct delegation only when `git worktree add` fails, worktree provisioning checks fail, or sub-agent dispatch returns an error for the worktree path. A judgment that isolation is unnecessary or that the edits are simple does not justify skipping to direct delegation — only concrete errors do.
 
@@ -173,7 +179,7 @@ When using direct delegation, the executor must:
 
 Record the concrete error that triggered the fallback in `execution.md`.
 
-## Delegation
+### Model Selection
 
 Default to the cheapest/fastest concrete model or delegation profile available on the current runtime. When the runtime supports explicit sub-agent model or profile selection, the executor MUST pass that selection in the spawn/delegation call instead of relying on inherited defaults.
 
@@ -189,6 +195,8 @@ Before spawning any implementation or fix sub-agent, tell the user:
 - whether a planner-provided `delegate_profile` is being used or overridden
 
 Record the same model or profile decision in `execution.md`.
+
+### Task Construction
 
 Every delegated task must be tight and self-contained. Include:
 
